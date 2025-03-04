@@ -1,201 +1,287 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>data.alterloop.dev - Transform Google Sheets into APIs</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
-            rel="stylesheet"
-    />
     <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-            Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
-            sans-serif;
-            background: linear-gradient(to bottom, #f4f4f8 0%, #ffffff 100%);
-            min-height: 100vh;
-        }
-        .logo-gradient {
-            background: linear-gradient(135deg, #ff9800, #f57c00);
-        }
-        .section-border {
-            border: 2px solid rgba(255, 152, 0, 0.2);
-            border-radius: 15px;
-            box-shadow: 0px 3px 5px rgba(255, 152, 0, 0.2);
-        }
-        .step-card {
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            border-radius: 15px;
-            padding: 1.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
             background-color: #ffffff;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .step-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0px 3px 5px rgba(255, 152, 0, 0.2);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
         }
-        .screenshot {
-            border-radius: 10px;
-            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+        /* Typography */
+        h1 { font-size: 2.5rem; font-weight: 700; color: #1a1a1a; }
+        h2 { font-size: 2rem; font-weight: 600; color: #2a2a2a; }
+        h3 { font-size: 1.5rem; font-weight: 500; color: #2a2a2a; }
+        p { color: #666; }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 4rem 0;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        .logo {
+            width: 4rem;
+            height: 4rem;
+            background-color: #ff6b00;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-right: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 3px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #ff6b00;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #ff8b00;
+        }
+        .btn-secondary {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #e4e4e4;
+        }
+
+        /* Steps Section */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        .step {
+            background-color: #f9f9f9;
+            border-radius: 3px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .step-number {
+            font-size: 3rem;
+            color: #ff6b00;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .step-image {
+            max-width: 100%;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 1rem;
         }
+
+        /* Code Section */
+        .code-section {
+            background-color: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 3px;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
         .code-block {
-            background-color: rgba(0, 0, 0, 0.05);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 152, 0, 0.2);
-            padding: 20px;
-            font-family: 'SF Mono', 'Monaco', monospace;
-            height: 250px;
-            overflow-y: auto;
+            background-color: #f9f9f9;
+            border: 1px solid #e9e9e9;
+            border-radius: 3px;
+            padding: 1rem;
             position: relative;
         }
         .copy-btn {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-            color: #333;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255,107,0,0.1);
+            color: #ff6b00;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
         .copy-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 3px 5px rgba(255, 152, 0, 0.3);
+            background-color: rgba(255,107,0,0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .code-section {
+                grid-template-columns: 1fr;
+            }
+            h1 { font-size: 2rem; }
+            .logo-container { flex-direction: column; }
+            .logo { margin-right: 0; margin-bottom: 1rem; }
+        }
+
+        /* GitHub Section */
+        .github-section {
+            text-align: center;
+            background-color: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 3px;
+            padding: 3rem;
+            margin-top: 4rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            border-top: 1px solid #f0f0f0;
+            color: #888;
         }
     </style>
 </head>
-<body class="text-gray-900">
-<div class="container mx-auto px-4 py-16 max-w-5xl">
-    <!-- Header -->
-    <header class="mb-16">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 rounded-full logo-gradient flex items-center justify-center shadow-sm">
-                    <span class="text-3xl font-bold text-white">AL</span>
-                </div>
-                <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-400">
-                    data.alterloop.dev
-                </h1>
-            </div>
-            <nav class="space-x-4">
-                <a href="#" class="text-gray-600 hover:text-orange-600 transition font-medium">Docs</a>
-                <a href="#" class="text-gray-600 hover:text-orange-600 transition font-medium">Pricing</a>
-                <a href="#" class="bg-orange-500 text-white px-4 py-2 rounded-full hover:bg-orange-600 transition shadow-sm">Get Started</a>
-            </nav>
+<body>
+<div class="container">
+    <header class="header">
+        <div class="logo-container">
+            <div class="logo">AL</div>
+            <h1>data.alterloop.dev</h1>
         </div>
-        <p class="text-2xl text-gray-700 font-light max-w-3xl mx-auto text-center mt-6">
-            Transform Your Google Sheets into Powerful APIs in Minutes
+
+        <p style="max-width: 600px; margin: 0 auto 2rem;">
+            Transform Your Google Sheets into Powerful APIs Instantly
         </p>
+
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <a href="https://github.com/alterloop/data" class="btn btn-secondary">
+                Open Source
+            </a>
+            <a href="#get-started" class="btn btn-primary">
+                Get Started
+            </a>
+        </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="section-border p-12 mb-16">
-        <!-- Steps Section (Vertical) -->
-        <section class="space-y-12 mb-16">
-            <!-- Step 1 -->
-            <div class="step-card">
-                <div class="text-3xl font-bold text-orange-500 mb-4">01</div>
-                <h3 class="text-2xl font-semibold mb-3 text-orange-700">Create a Google Sheet</h3>
-                <p class="text-gray-600">
-                    Open Google Sheets and create a new spreadsheet with clear header names.
-                </p>
-                <img src="https://via.placeholder.com/600x400?text=Screenshot+1" alt="Create Sheet Screenshot" class="screenshot" />
+    <main>
+        <section class="steps">
+            <div class="step">
+                <div class="step-number">01</div>
+                <h3>Create Google Sheet</h3>
+                <p>Open Google Sheets and create a new spreadsheet. Define clear headers for your data columns.</p>
+                <img src="/api/placeholder/600/400" alt="Create Google Sheet" class="step-image">
             </div>
-            <!-- Step 2 -->
-            <div class="step-card">
-                <div class="text-3xl font-bold text-orange-500 mb-4">02</div>
-                <h3 class="text-2xl font-semibold mb-3 text-orange-700">Paste the Code in Apps Script</h3>
-                <p class="text-gray-600">
-                    Open the Apps Script editor from the Google Sheets menu and paste the provided code.
-                </p>
-                <img src="https://via.placeholder.com/600x400?text=Screenshot+2" alt="Apps Script Screenshot" class="screenshot" />
+
+            <div class="step">
+                <div class="step-number">02</div>
+                <h3>Add Apps Script</h3>
+                <p>Navigate to Tools > Script editor and paste the provided API conversion script.</p>
+                <img src="/api/placeholder/600/400" alt="Add Apps Script" class="step-image">
             </div>
-            <!-- Step 3 -->
-            <div class="step-card">
-                <div class="text-3xl font-bold text-orange-500 mb-4">03</div>
-                <h3 class="text-2xl font-semibold mb-3 text-orange-700">Deploy and Get Your API</h3>
-                <p class="text-gray-600">
-                    Deploy the script as a web app, then copy the provided API URL to start using your API.
-                </p>
-                <img src="https://via.placeholder.com/600x400?text=Screenshot+3" alt="Deploy Screenshot" class="screenshot" />
+
+            <div class="step">
+                <div class="step-number">03</div>
+                <h3>Deploy Web App</h3>
+                <p>Deploy the script as a web app and obtain your unique API endpoint.</p>
+                <img src="/api/placeholder/600/400" alt="Deploy Web App" class="step-image">
             </div>
         </section>
 
-        <!-- Code Section -->
-        <section class="grid md:grid-cols-2 gap-12">
-            <!-- Apps Script Code Block -->
+        <section class="code-section">
             <div>
-                <h2 class="text-3xl font-bold mb-6 text-orange-700">Apps Script Code</h2>
-                <div class="relative">
-            <pre class="code-block text-sm overflow-x-auto"><code>function doGet() {
+                <h2>Simple Script</h2>
+                <div class="code-block">
+                        <pre><code>function doGet() {
   const sheet = SpreadsheetApp.getActiveSheet();
   const data = sheet.getDataRange().getValues();
   return ContentService.createTextOutput(
-    JSON.stringify(
-      data.slice(1).map(row =>
-        Object.fromEntries(
-          data[0].map((header, i) => [header, row[i]])
-        )
+    JSON.stringify(data.slice(1).map(row =>
+      Object.fromEntries(
+        data[0].map((header, i) => [header, row[i]])
       )
-    )
+    ))
   ).setMimeType(ContentService.MimeType.JSON);
 }</code></pre>
-                    <button class="copy-btn absolute top-2 right-2 px-3 py-1 rounded-md text-sm">
-                        Copy
-                    </button>
+                    <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
-            <!-- API Examples Code Block -->
+
             <div>
-                <h2 class="text-3xl font-bold mb-6 text-orange-700">API Examples</h2>
-                <div class="space-y-4">
-                    <!-- Insert Data -->
-                    <div class="relative code-block">
-                        <strong class="text-orange-700">Insert Data:</strong>
-                        <code class="block mt-2 text-sm">curl -X POST https://data.alterloop.dev/api \
-                            -H "Content-Type: application/json" \
-                            -d '{"name": "John", "email": "john@example.com"}'</code>
-                        <button class="copy-btn absolute top-2 right-2 px-3 py-1 rounded-md text-sm">
-                            Copy
-                        </button>
-                    </div>
-                    <!-- Read Data -->
-                    <div class="relative code-block">
-                        <strong class="text-orange-700">Read Data:</strong>
-                        <code class="block mt-2 text-sm">curl https://data.alterloop.dev/api</code>
-                        <button class="copy-btn absolute top-2 right-2 px-3 py-1 rounded-md text-sm">
-                            Copy
-                        </button>
-                    </div>
+                <h2>API Examples</h2>
+                <div class="code-block">
+                    <strong style="color: #ff6b00;">Insert Data:</strong>
+                    <pre><code>curl -X POST https://data.alterloop.dev/api \
+-H "Content-Type: application/json" \
+-d '{"name": "John", "email": "john@example.com"}'</code></pre>
+                    <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
+                </div>
+                <div class="code-block" style="margin-top: 1rem;">
+                    <strong style="color: #ff6b00;">Read Data:</strong>
+                    <pre><code>curl https://data.alterloop.dev/api</code></pre>
+                    <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
         </section>
+
+        <section class="github-section">
+            <h2>Always Free & Open Source</h2>
+            <p style="max-width: 600px; margin: 1rem auto;">
+                No hidden costs, no paid tiers. AlterLoop is completely free and open-source.
+                Contribute, modify, and use as you wish under the MIT License.
+            </p>
+            <a href="https://github.com/alterloop/data" class="btn btn-primary">
+                View on GitHub
+            </a>
+        </section>
     </main>
 
-    <!-- Swagger Button -->
-    <div class="text-center mb-12">
-        <a href="#"
-           class="bg-orange-500 text-white px-10 py-5 rounded-full text-lg hover:bg-orange-600 transition shadow-sm">
-            Try Live on Swagger
-        </a>
-    </div>
-
-    <!-- Footer -->
-    <footer class="text-center text-gray-500 mt-12 p-4">
-        <p>© 2024 data.alterloop.dev - Transform Your Data in Seconds</p>
+    <footer class="footer">
+        <p>© 2024 data.alterloop.dev - Transform Your Data Effortlessly</p>
     </footer>
 </div>
 
 <script>
-    // Copy-to-clipboard functionality
-    document.querySelectorAll('.copy-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const codeBlock = button.parentElement.querySelector('code');
-            navigator.clipboard.writeText(codeBlock.textContent.trim());
+    function copyToClipboard(button) {
+        const codeElement = button.previousElementSibling.querySelector('code');
+        const textToCopy = codeElement.textContent.trim();
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = button.textContent;
             button.textContent = 'Copied!';
+            button.style.backgroundColor = 'rgba(0,255,0,0.1)';
+
             setTimeout(() => {
-                button.textContent = 'Copy';
+                button.textContent = originalText;
+                button.style.backgroundColor = 'rgba(255,107,0,0.1)';
             }, 2000);
         });
-    });
+    }
 </script>
 </body>
 </html>

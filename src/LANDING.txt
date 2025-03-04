@@ -15,6 +15,7 @@ ricordati che devi rispettare queste indicazioni:
 - metti dei testi descrttivi per ogni passaggio
 - non ce nessuna sezioni prezzi il servizio e gratuito
 - valorizza il fatto che il progetto e opensorce
+- ispirati a tailwindcss ma non lo importare
 
 Edit
 I'll create a landing page for data.alterloop.dev that explains how to easily create an API from a Google Spreadsheet.
@@ -128,105 +129,75 @@ Sfumature più sofisticate
 Maggiore profondità e dimensionalità
 Cosa ne pensi? Vuoi che raffini ulteriormente il design?
 
+Sulla base di quanto visto sopra migliora e trasforma questo codice
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>data.alterloop.dev - Transform Google Sheets into APIs</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 
-            min-height: 100vh;
-        }
-        .section-border {
-            border: 2px solid rgba(218, 165, 32, 0.2);
-            box-shadow:
-                0 15px 30px -10px rgba(218, 165, 32, 0.15),
-                0 10px 20px -5px rgba(218, 165, 32, 0.1);
-        }
-        .code-block {
-            background-color: rgba(0,0,0,0.05);
-            border-radius: 15px;
-            border: 1px solid rgba(218, 165, 32, 0.1);
-            padding: 20px;
-            font-family: 'SF Mono', 'Monaco', monospace;
-            height: 250px;
-            overflow-y: auto;
-            position: relative;
-        }
-        .step-card {
-            transition: all 0.3s ease;
-            border: 1px solid rgba(218, 165, 32, 0.1);
-        }
-        .step-card:hover {
-            transform: translateY(-10px);
-            box-shadow:
-                0 25px 40px -15px rgba(218, 165, 32, 0.2),
-                0 10px 20px -5px rgba(218, 165, 32, 0.1);
-        }
-        .copy-btn {
-         color: #333;
-            transition: all 0.3s ease;
-        }
-        .copy-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px -5px rgba(218, 165, 32, 0.3);
-        }
+import React, { useState } from 'react';
 
-    </style>
-</head>
-<body class="text-gray-900">
-    <div class="container mx-auto px-4 py-16 max-w-6xl">
-        <header class="mb-16">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
-                        <span class="text-3xl font-bold text-white">AL</span>
-                    </div>
-                    <h1 class="text-4xl font-bold text-transparent bg-clip-text  from-yellow-600 to-yellow-400">
-                        data.alterloop.dev
-                    </h1>
-                </div>
-                <nav className="space-x-4">
-                    <a href="#" class="text-gray-600 hover:text-yellow-600 transition font-medium">Docs</a>
-                    <a href="#" class="text-gray-600 hover:text-yellow-600 transition font-medium">Pricing</a>
-                    <a href="#" class="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600 transition">Get Started</a>
-                </nav>
-            </div>
-            <p class="text-2xl text-gray-700 font-light max-w-3xl mx-auto text-center mt-6">
-                Transform Your Google Sheets into Powerful APIs in Minutes
-            </p>
-        </header>
+const CopyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>
+);
 
-        <main class="rounded-3xl p-12 shadow-2xl">
-            <section class="grid md:grid-cols-3 gap-8 mb-16">
-                {[
-                    {number: "01", title: "Create Sheet", description: "Open Google Sheets and create a new sheet with clear headers."},
-                    {number: "02", title: "Apps Script", description: "Paste the provided code into Google's Script Editor."},
-                    {number: "03", title: "Deploy", description: "Deploy as a web app and get your API URL."}
-                ].map((step, index) => (
-                    <div key={index} class="step-card bg-white/80 backdrop-blur-lg p-6 rounded-2xl shadow-lg">
-                        <div class="text-5xl font-bold text-yellow-500 mb-4">{step.number}</div>
-                        <h3 class="text-xl font-semibold mb-3 text-yellow-700">{step.title}</h3>
-                        <p class="text-gray-600">{step.description}</p>
-                    </div>
-                ))}
-            </section>
+const CheckIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+);
 
-            <section class="bg-white rounded-3xl p-12 section-border mb-16">
-                <div class="grid md:grid-cols-2 gap-12">
-                    <div>
-                        <h2 class="text-3xl font-bold mb-6 text-yellow-700">Simple Code</h2>
-                        <div class="relative">
-                            <pre class="code-block text-sm overflow-x-auto"><code>function doGet() {
+const GitHubIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+  </svg>
+);
+
+const AlterLoopLanding = () => {
+  const [copiedStates, setCopiedStates] = useState({
+    code: false,
+    insertApi: false,
+    readApi: false
+  });
+
+  const copyToClipboard = (text, key) => {
+    navigator.clipboard.writeText(text);
+    setCopiedStates(prev => ({
+      ...prev,
+      [key]: true
+    }));
+    setTimeout(() => {
+      setCopiedStates(prev => ({
+        ...prev,
+        [key]: false
+      }));
+    }, 2000);
+  };
+
+  const steps = [
+    {
+      number: "01",
+      title: "Create Google Sheet",
+      description: "Open Google Sheets and create a new spreadsheet. Define clear headers for your data columns.",
+      placeholder: "/api/placeholder/400/300"
+    },
+    {
+      number: "02",
+      title: "Add Apps Script",
+      description: "Navigate to Tools > Script editor and paste the provided API conversion script.",
+      placeholder: "/api/placeholder/400/300"
+    },
+    {
+      number: "03",
+      title: "Deploy Web App",
+      description: "Deploy the script as a web app and obtain your unique API endpoint.",
+      placeholder: "/api/placeholder/400/300"
+    }
+  ];
+
+  const codeSnippet = `function doGet() {
   const sheet = SpreadsheetApp.getActiveSheet();
   const data = sheet.getDataRange().getValues();
-  // Convert data to JSON
   return ContentService.createTextOutput(
     JSON.stringify(data.slice(1).map(row =>
       Object.fromEntries(
@@ -234,60 +205,158 @@ Cosa ne pensi? Vuoi che raffini ulteriormente il design?
       )
     ))
   ).setMimeType(ContentService.MimeType.JSON);
-}</code></pre>
-                            <button class="copy-btn absolute top-2 right-2 px-3 py-1 rounded-md text-sm">
-                                Copy
-                            </button>
-                        </div>
-                    </div>
+}`;
 
-                    <div>
-                        <h2 class="text-3xl font-bold mb-6 text-yellow-700">API Examples</h2>
-                        <div class="space-y-4">
-                            {[
-                                {title: "Insert Data", example: "curl -X POST https://script.google.com/macros/s/.../exec \\\n-H \"Content-Type: application/json\" \\\n-d '{\"name\": \"John\", \"email\": \"john@example.com\"}'"},
-                                {title: "Read Data", example: "curl https://script.google.com/macros/s/.../exec"}
-                            ].map((api, index) => (
-                                <div key={index} class="relative code-block">
-                                    <strong class="text-yellow-700">{api.title}:</strong>
-                                    <code class="block mt-2 text-sm">{api.example}</code>
-                                    <button class="copy-btn absolute top-2 right-2 px-3 py-1 rounded-md text-sm">
-                                        Copy
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
+  const apiExamples = [
+    {
+      title: 'Insert Data',
+      command: `curl -X POST https://data.alterloop.dev/api \\\n-H "Content-Type: application/json" \\\n-d '{"name": "John", "email": "john@example.com"}'`
+    },
+    {
+      title: 'Read Data',
+      command: `curl https://data.alterloop.dev/api`
+    }
+  ];
 
-            <div class="text-center mt-16">
-                <a href="#" class="bg-yellow-500 text-white px-10 py-5 rounded-full text-lg
-                hover:bg-yellow-600 transition-all duration-300 shadow-xl hover:shadow-2xl">
-                    Try Live on Swagger
-                </a>
+  return (
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
+        <header className="mb-16 text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-orange-500 rounded-[3px] flex items-center justify-center shadow-sm mr-4">
+              <span className="text-3xl font-bold text-white">AL</span>
             </div>
+            <h1 className="text-4xl font-bold text-gray-900">
+              data.alterloop.dev
+            </h1>
+          </div>
+
+          <p className="text-2xl text-gray-700 font-light max-w-3xl mx-auto mb-8">
+            Transform Your Google Sheets into Powerful APIs Instantly
+          </p>
+
+          <div className="flex justify-center space-x-4">
+            <a
+              href="https://github.com/yourusername/alterloop"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center bg-gray-100 text-gray-800 px-6 py-2 rounded-[3px] hover:bg-gray-200 transition"
+            >
+              <GitHubIcon className="mr-2" />
+              Open Source
+            </a>
+            <a
+              href="#get-started"
+              className="bg-orange-500 text-white px-6 py-2 rounded-[3px] hover:bg-orange-600 transition"
+            >
+              Get Started
+            </a>
+          </div>
+        </header>
+
+        <main>
+          <section className="space-y-12 mb-16">
+            {steps.map((step, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center text-center bg-gray-50 p-8 rounded-[3px] shadow-sm"
+              >
+                <div className="text-5xl font-bold text-orange-500 mb-4">
+                  {step.number}
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+                  {step.title}
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-xl">
+                  {step.description}
+                </p>
+                <img
+                  src={step.placeholder}
+                  alt={`Step ${step.number} screenshot`}
+                  className="w-full max-w-2xl rounded-[3px] shadow-sm"
+                />
+              </div>
+            ))}
+          </section>
+
+          <section className="bg-white rounded-[3px] p-12 border border-gray-100 shadow-sm">
+            <div className="grid md:grid-cols-2 gap-12">
+              <div>
+                <h2 className="text-3xl font-bold mb-6 text-gray-800">
+                  Simple Script
+                </h2>
+                <div className="relative">
+                  <pre className="bg-gray-50 p-6 rounded-[3px] border border-gray-200 relative">
+                    <code className="block text-sm overflow-x-auto">{codeSnippet}</code>
+                    <button
+                      onClick={() => copyToClipboard(codeSnippet, 'code')}
+                      className="absolute top-2 right-2 bg-orange-100 text-orange-700 p-2 rounded-[3px] hover:bg-orange-200 transition"
+                    >
+                      {copiedStates.code ? <CheckIcon /> : <CopyIcon />}
+                    </button>
+                  </pre>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-bold mb-6 text-gray-800">
+                  API Examples
+                </h2>
+                <div className="space-y-4">
+                  {apiExamples.map((api, index) => (
+                    <div
+                      key={index}
+                      className="bg-gray-50 p-6 rounded-[3px] border border-gray-200 relative"
+                    >
+                      <strong className="text-orange-700 block mb-2">
+                        {api.title}:
+                      </strong>
+                      <pre className="text-sm overflow-x-auto">
+                        <code>{api.command}</code>
+                      </pre>
+                      <button
+                        onClick={() => copyToClipboard(api.command, index === 0 ? 'insertApi' : 'readApi')}
+                        className="absolute top-2 right-2 bg-orange-100 text-orange-700 p-2 rounded-[3px] hover:bg-orange-200 transition"
+                      >
+                        {copiedStates[index === 0 ? 'insertApi' : 'readApi']
+                          ? <CheckIcon />
+                          : <CopyIcon />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="text-center mt-16">
+            <div className="inline-block bg-white border border-gray-200 rounded-[3px] p-8 shadow-sm">
+              <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                Always Free & Open Source
+              </h3>
+              <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+                No hidden costs, no paid tiers. AlterLoop is completely free and open-source.
+                Contribute, modify, and use as you wish under the MIT License.
+              </p>
+              <a
+                href="https://github.com/yourusername/alterloop"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-orange-500 text-white px-10 py-3 rounded-[3px] hover:bg-orange-600 transition inline-flex items-center"
+              >
+                <GitHubIcon className="mr-2" />
+                View on GitHub
+              </a>
+            </div>
+          </div>
         </main>
 
-        <footer class="text-center text-gray-500 mt-12 p-4">
-            <p>© 2024 data.alterloop.dev - Transform Your Data in Seconds</p>
+        <footer className="text-center text-gray-500 mt-16 pt-8 border-t border-gray-100">
+          <p>© 2024 data.alterloop.dev - Transform Your Data Effortlessly</p>
         </footer>
+      </div>
     </div>
+  );
+};
 
-    <script>
-        // Copy to clipboard functionality
-        document.querySelectorAll('.copy-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const codeBlock = button.parentElement.querySelector('code');
-                navigator.clipboard.writeText(codeBlock.textContent.trim());
-                button.textContent = 'Copied!';
-                button.style.background =
-                setTimeout(() => {
-                    button.textContent = 'Copy';
-                    button.style.background
-                }, 2000);
-            });
-        });
-    </script>
-</body>
-</html>
+export default AlterLoopLanding;
