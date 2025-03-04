@@ -2,6 +2,7 @@ mi crei una landing page che presenta il servizio data.alterloop.dev il quale pr
 
 ricordati che devi rispettare queste indicazioni:
 
+- genera tutto in un unico file html con css js incorporati
 - se usi i bordi arrotondati usa anche le ombre ma che siano piccole massimo 3px
 - i 3 step devono avere la screenshot del passaggio che fa capire cosa fare e devono svilupparsi in verticale uno sopra l'altro
 - evita lo sviluppo in orizzontale ma usa il verticale
