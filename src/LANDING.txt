@@ -1,13 +1,19 @@
 mi crei una landing page che presenta il servizio data.alterloop.dev il quale presenta come facilmente creare una API per salve e leggere dati direttametne da un google spreadsheet la landing page invita a segure i seguenti passaggi mostrando le scheershot quiga, crea un nuovo foglio di goole andare nel menu Apps Scritpt , copiare il codice che viene fornito incollalro , eseguire il deployment copiare il codice e poi mostra delle curl di esempio di insert e list, e poi mette il link con lo swagger per provare le API direttamente live
 
-ricordati che:
+ricordati che devi rispettare queste indicazioni:
 
-- se usi i bordi arrotondati usa anche le ombre ma che siano piccole massimo 5px
-- i 3 step devono avere la screenshot del passaggio che fa capire cosa fare
+- se usi i bordi arrotondati usa anche le ombre ma che siano piccole massimo 3px
+- i 3 step devono avere la screenshot del passaggio che fa capire cosa fare e devono svilupparsi in verticale uno sopra l'altro
 - evita lo sviluppo in orizzontale ma usa il verticale
 - usa un font moderno e pulito
 - usa colori che siano accattivanti ma non troppo invasivi
 - gli esempi di curl devono essere fatti con questo dominio https://data.alterloop.dev/api
+- non mettere in colonna il codice da copiare con gli esempi
+- mi raccomando il radius dei border massimo 3px
+- metti dei plceholder per le immagini delle screenshot
+- metti dei testi descrttivi per ogni passaggio
+- non ce nessuna sezioni prezzi il servizio e gratuito
+- valorizza il fatto che il progetto e opensorce
 
 Edit
 I'll create a landing page for data.alterloop.dev that explains how to easily create an API from a Google Spreadsheet.
