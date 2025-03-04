@@ -13,7 +13,12 @@ test-list:
 		-H Secret:$(DATA_SECRET) \
 		"$(DATA_URL)/list?sheet=2025"
 
+test-get-by-row:
+	@curl -L \
+		-H Secret:$(DATA_SECRET) \
+		"$(DATA_URL)/list?sheet=2025&row=2"
+
 test-insert:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		 "$(DATA_URL)/insert" -d '{"sheet":"Test CIAO", "name":"Frank", "age":10, "city":{"name":"Rome","cap":10000}}'
+		 "$(DATA_URL)/insert" -d '{"sheet":"2025", "name":"Frank", "age":10, "city":{"name":"Rome","cap":10000}}'

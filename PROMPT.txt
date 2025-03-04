@@ -145,13 +145,15 @@ ricorda le seguenti feature
 - ricorda che lo sheet su cui agire nel caso GET e un parametro in di querystring nel caso post e un parametro nel body della richiesta JSON
 - nel caso POST lo sheetname da modificare o creare si trova nel payload JSON del body quindi devi prenderlo con e.postData.contents.sheet
 - ricorda che per ogni oggetto inserito o aggioranto nella tabella devono essere agguinte le colonne per ospitare i nuovi dati
-- l'oggetto json in ingesso deve essere esposo in campi radice e e i campi sotto la radice devono essere appiattivi con la notazione '.'
-- assicurati dopo l'inserimento di veridicare che il record sia effettivametne presente quindi facendo dopo la append una read dell'ultimo rigo e contronllare i due valori
+- l'oggetto json in ingesso deve essere esploso in campi radice e e i campi sotto la radice devono essere appiattivi con la notazione '.'
+- assicurati dopo l'inserimento di verificare che il record sia effettivamente presente quindi facendo dopo la append una read dell'ultimo rigo e contronllare i due valori
 - nel codice ci deve essere una funzione updateHeaders che si occupa di aggiornare l'header della tabella con i nuovi campi deve sempre fare il merge tra quanto gia esiste fare la diff con quelli del nuovo oggetto da inserire o aggiornare e poi aggiornare la prima riga
 - attenzione nella insert e nella update la proprieta sheet è una chiave e non deve essere inserita come colonna o aggiornata quindi non ci sara mail la colonna sheet, attenzione però che data in risposta lo sheet ci deve essere quindi deve essere rimosso proprio in prossimita della chiamata concreta appendRow
 - stai attento a togliere nel merge delle colonne iniziali eventuali colonne vuote quando il foglio e vuoto
 - un altro campo chiave da trattare come lo sheet e il row che riporta il numero di riga per come visibile nello spreadsheet quello ci deve essere sempre
 - i record ritornati nella response data non devono essere flatten ma strutturati e devono contenere anche le colonne che in input non ho mandato
+- ricordati che i record in response data devono sempre contenere la chiave sheet e row
+- nella GET tutte le chiave del query string che non iniziano per $ sono considerate colonne da filtrare es. ?city.name=Palermo significa che voglio solo i record dove la colonna city.name e appunto Palermo
 
 ecco un implementazione di riferimento
 
@@ -165,8 +167,8 @@ ecco un implementazione di riferimento
  *   "sheet": "2025",
  *   "columns": ["name", "age"],
  *   "data": [
- *     { "name": "Frank", "age": 25 },
- *     { "name": "John", "age": 30 }
+ *     { "name": "Frank", "age": 25, "row": 2 },
+ *     { "name": "John", "age": 30, "row": 3 }
  *   ]
  * }
  *
@@ -198,33 +200,18 @@ function doGet(e) {
 
 /**
  * Handle POST requests
- * Expected payload example for insert:
- * {
- *   "sheet": "Test CIAO",
- *   "name": "Frank",
- *   "age": 25
- * }
  *
- * Expected payload example for update:
- * {
- *   "sheet": "2025",
- *   "filter": { "name": "Frank" },
- *   "data": { "age": 30 }
- * }
+ * Expected payload examples:
+ * For insert:
+ *   { "sheet": "Test CIAO", "name": "Frank", "age": 25 }
  *
- * Expected payload example for delete:
- * {
- *   "sheet": "2025",
- *   "filter": { "name": "Frank" }
- * }
+ * For update:
+ *   { "sheet": "2025", "filter": { "name": "Frank" }, "data": { "age": 30 } }
  *
- * Response examples include:
- * {
- *   "sheet": "2025",
- *   "columns": ["name", "age"],
- *   "success": true,
- *   "data": [ { "name": "Frank", "age": 25 } ]
- * }
+ * For delete:
+ *   { "sheet": "2025", "filter": { "name": "Frank" } }
+ *
+ * The response always returns the full, structured record (with all columns and a "row" key).
  *
  * @param {Object} e - Event object
  * @return {TextOutput} JSON response
@@ -242,10 +229,17 @@ function doPost(e) {
     }
     params = flattenObject(params);
 
-    // For POST, sheet name is provided in the JSON payload ("sheet")
+    // For POST, the sheet name is provided in the JSON payload ("sheet")
     var sheetName = params.sheet || getFirstSheetName();
+    // Remove the 'sheet' key so it is not inserted/updated as a column.
+    delete params.sheet;
+    if (params.data) {
+      delete params.data.sheet;
+    }
+    if (params.filter) {
+      delete params.filter.sheet;
+    }
 
-    // For insert only, create the sheet if it does not exist.
     var sheet;
     if (action === "insert") {
       sheet = getOrCreateSheet(sheetName);
@@ -361,20 +355,27 @@ function getOrCreateSheet(sheetName) {
 /**
  * Read all data from the sheet.
  * Returns an object with header ("columns") and row data ("data").
+ * Each record is built from the sheet's row, includes a "row" property with the actual row number,
+ * and is unflattened (structured) so that any keys with dot-notation become nested objects.
+ *
  * @param {Sheet} sheet
  * @returns {Object} Data object { columns: Array, data: Array }
  */
 function readData(sheet) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return { columns: [], data: [] };
-  var headers = data[0];
+  // Remove empty columns from the header row
+  var headers = data[0].filter(function(h) { return h !== ""; });
   var result = [];
   for (var i = 1; i < data.length; i++) {
-    var rowObj = {};
+    var flatObj = {};
     for (var j = 0; j < headers.length; j++) {
-      rowObj[headers[j]] = data[i][j];
+      flatObj[headers[j]] = data[i][j];
     }
-    result.push(rowObj);
+    // Add the actual spreadsheet row number
+    flatObj["row"] = i + 1;
+    // Convert the flat object into a structured (nested) object
+    result.push(unflattenObject(flatObj));
   }
   return { columns: headers, data: result };
 }
@@ -407,8 +408,35 @@ function flattenObject(obj, prefix) {
 }
 
 /**
+ * Unflatten a flat object with dot notation into a nested object.
+ *
+ * @param {Object} data - The flat object.
+ * @returns {Object} The structured (nested) object.
+ */
+function unflattenObject(data) {
+  var result = {};
+  for (var key in data) {
+    if (!data.hasOwnProperty(key)) continue;
+    var parts = key.split('.');
+    var current = result;
+    for (var i = 0; i < parts.length; i++) {
+      if (i === parts.length - 1) {
+        current[parts[i]] = data[key];
+      } else {
+        if (current[parts[i]] === undefined) {
+          current[parts[i]] = {};
+        }
+        current = current[parts[i]];
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Update the header row of the sheet to include new keys from the newData.
- * Merges existing headers with the keys in newData.
+ * Merges existing headers with the keys in newData, filtering out any empty columns.
+ * The keys "sheet" and "row" are ignored.
  *
  * @param {Sheet} sheet - The target sheet.
  * @param {Object} newData - The new data object.
@@ -419,15 +447,15 @@ function updateHeaders(sheet, newData) {
   var values = range.getValues();
   var headers = [];
   if (values.length > 0) {
-    headers = values[0];
+    headers = values[0].filter(function(h) { return h !== ""; });
   }
-  // Create a lookup for existing headers
   var headerSet = {};
   for (var i = 0; i < headers.length; i++) {
     headerSet[headers[i]] = true;
   }
-  // Add any new keys that are missing
-  var newKeys = Object.keys(newData);
+  var newKeys = Object.keys(newData).filter(function(key) {
+    return key !== "sheet" && key !== "row";
+  });
   var updated = false;
   for (var i = 0; i < newKeys.length; i++) {
     if (!headerSet[newKeys[i]]) {
@@ -436,7 +464,6 @@ function updateHeaders(sheet, newData) {
       updated = true;
     }
   }
-  // If new headers were added or if the sheet was empty, update the header row.
   if (updated || values.length === 0) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   }
@@ -445,7 +472,8 @@ function updateHeaders(sheet, newData) {
 
 /**
  * Insert a record into the sheet.
- * This function updates headers, appends the new row and verifies the insertion.
+ * This function updates headers, appends the new row, verifies the insertion,
+ * and then returns the full structured record (including the "row" number).
  *
  * @param {Sheet} sheet - The target sheet.
  * @param {Object} record - The flattened record to insert.
@@ -453,29 +481,36 @@ function updateHeaders(sheet, newData) {
  */
 function insertData(sheet, record) {
   var headers = updateHeaders(sheet, record);
-  // Create row array based on headers
   var row = headers.map(function(header) {
     return record[header] !== undefined ? record[header] : "";
   });
   sheet.appendRow(row);
-  // Verify insertion by reading the last row
   var lastRow = sheet.getLastRow();
-  var insertedRow = sheet.getRange(lastRow, 1, 1, headers.length).getValues()[0];
+  var insertedValues = sheet.getRange(lastRow, 1, 1, headers.length).getValues()[0];
+  var flatInserted = {};
+  for (var i = 0; i < headers.length; i++) {
+    flatInserted[headers[i]] = insertedValues[i];
+  }
+  flatInserted["row"] = lastRow;
+  var structured = unflattenObject(flatInserted);
+
+  // Verify insertion by comparing the inserted row values.
   var verified = true;
   for (var i = 0; i < headers.length; i++) {
-    if (row[i] != insertedRow[i]) {
+    if (row[i] != insertedValues[i]) {
       verified = false;
       break;
     }
   }
-  return { success: verified, inserted: record, columns: headers };
+  return { success: verified, inserted: structured, columns: headers };
 }
 
 /**
  * Update a record in the sheet.
  * Expects the parameters to include:
  *   - filter: an object containing the key-value pair to locate the row.
- *   - data: an object with new data to update (will be flattened).
+ *   - data: an object with new data to update.
+ * Returns the full structured updated record (including the "row" number).
  *
  * @param {Sheet} sheet - The target sheet.
  * @param {Object} params - Contains 'filter' and 'data'.
@@ -490,29 +525,39 @@ function updateData(sheet, params) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return { error: "Sheet is empty", success: false, columns: headers };
 
-  // Identify filter column (using the first key in the filter)
   var filterKey = Object.keys(params.filter)[0];
   var filterValue = params.filter[filterKey];
   var filterIndex = headers.indexOf(filterKey);
   if (filterIndex === -1) return { error: "Filter column not found", success: false, columns: headers };
 
-  // Search for a row that matches the filter and update it
+  var updatedRowIndex = null;
   for (var i = 1; i < data.length; i++) {
     if (data[i][filterIndex] == filterValue) {
+      updatedRowIndex = i + 1;
       for (var j = 0; j < headers.length; j++) {
         if (newData[headers[j]] !== undefined) {
           sheet.getRange(i + 1, j + 1).setValue(newData[headers[j]]);
         }
       }
-      return { success: true, updated: newData, columns: headers };
+      break;
     }
   }
-  return { error: "Row not found", success: false, columns: headers };
+  if (updatedRowIndex === null) return { error: "Row not found", success: false, columns: headers };
+
+  var updatedValues = sheet.getRange(updatedRowIndex, 1, 1, headers.length).getValues()[0];
+  var flatUpdated = {};
+  for (var i = 0; i < headers.length; i++) {
+    flatUpdated[headers[i]] = updatedValues[i];
+  }
+  flatUpdated["row"] = updatedRowIndex;
+  var structured = unflattenObject(flatUpdated);
+  return { success: true, updated: structured, columns: headers };
 }
 
 /**
  * Delete a record from the sheet.
  * Expects the parameters to include a filter object.
+ * Returns the full structured deleted record (including the "row" number).
  *
  * @param {Sheet} sheet - The target sheet.
  * @param {Object} params - Contains 'filter'.
@@ -524,22 +569,22 @@ function deleteData(sheet, params) {
   }
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return { error: "Sheet is empty", success: false, columns: [] };
-  var headers = data[0];
+  var headers = data[0].filter(function(h) { return h !== ""; });
   var filterKey = Object.keys(params.filter)[0];
   var filterValue = params.filter[filterKey];
   var filterIndex = headers.indexOf(filterKey);
   if (filterIndex === -1) return { error: "Filter column not found", success: false, columns: headers };
 
-  // Search from bottom to top for the matching row to delete it
   for (var i = data.length - 1; i > 0; i--) {
     if (data[i][filterIndex] == filterValue) {
-      // Capture the record before deletion
-      var deletedRecord = {};
+      var deletedFlat = {};
       for (var j = 0; j < headers.length; j++) {
-        deletedRecord[headers[j]] = data[i][j];
+        deletedFlat[headers[j]] = data[i][j];
       }
+      deletedFlat["row"] = i + 1;
       sheet.deleteRow(i + 1);
-      return { success: true, deleted: deletedRecord, columns: headers };
+      var structured = unflattenObject(deletedFlat);
+      return { success: true, deleted: structured, columns: headers };
     }
   }
   return { error: "Row not found", success: false, columns: headers };
