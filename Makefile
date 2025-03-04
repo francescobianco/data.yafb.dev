@@ -1,7 +1,7 @@
 -include .env
 export $(shell test -f .env && cut -d= -f1 .env)
 
-DATA_URL = https://data.alterloop.dev
+DATA_URL = https://data.alterloop.dev/api
 
 push:
 	@git add .
@@ -11,9 +11,9 @@ push:
 test-list:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		"$(DATA_URL)/api/list?filter=1"
+		"$(DATA_URL)/list?filter=1"
 
 test-insert:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		 $(DATA_URL)/api/insert -d '{"sheet":"Test","name":"Frank"}'
+		 "$(DATA_URL)/insert" -d '{"sheet":"Test","name":"Frank"}'
