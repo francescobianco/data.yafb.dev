@@ -68,7 +68,7 @@ POST /delete
 ecco come deve apparira la risposta di ogni chiamata
 
 GET /list
-{
+Response: {
   "sheet": "2025",
   "columns": ["name", "age"],
   "data": [
@@ -84,12 +84,14 @@ GET /list
 }
 
 POST /insert
-{
+Response: {
   "sheet": "2025",
   "columns": ["name", "age"],
   "success": true,
   "data": [
   		{
+  		  "sheet": "2025",
+  		  "row": 2
 		  "name": "Frank",
 		  "age": 25
 		  }
@@ -97,12 +99,14 @@ POST /insert
 }
 
 POST /update
-{
+Response: {
   "sheet": "2025",
   "columns": ["name", "age"],
   "success": true,
   "data": [
   		{
+  		"sheet": "2025",
+  		"row": 2,
 		  "name": "Frank",
 		  "age": 25
 		  }
@@ -110,18 +114,25 @@ POST /update
 }
 
 POST /delete
-{
+Response: {
   "sheet": "2025",
   "columns": ["name", "age"],
   "success": true,
   "data": [
   		{
+  		"sheet": "2025",
+  		"row": 25,
 		  "name": "Frank",
 		  "age": 25
 		  }
   ]
 }
 
+
+Ecco alcuni casi di test
+
+GET /list?sheet=2025
+GET /list?sheet=2025&row=2
 
 ricorda le seguenti feature
 
@@ -132,28 +143,53 @@ ricorda le seguenti feature
 - assicurati che la creazione dello sheet funzioni verificando che sia stato creato
 - restituisci nella response il nome dello sheet manipolato in una chiave a parte della response questo deve servire come conferma che lo sheet selezionato sia quello corretto
 - ricorda che lo sheet su cui agire nel caso GET e un parametro in di querystring nel caso post e un parametro nel body della richiesta JSON
-- nel caso POST lo scheetname da modificare o creare si trova nel payload JSON del body quindi devi prenderlo con e.postData.contents.sheet
+- nel caso POST lo sheetname da modificare o creare si trova nel payload JSON del body quindi devi prenderlo con e.postData.contents.sheet
 - ricorda che per ogni oggetto inserito o aggioranto nella tabella devono essere agguinte le colonne per ospitare i nuovi dati
 - l'oggetto json in ingesso deve essere esposo in campi radice e e i campi sotto la radice devono essere appiattivi con la notazione '.'
 - assicurati dopo l'inserimento di veridicare che il record sia effettivametne presente quindi facendo dopo la append una read dell'ultimo rigo e contronllare i due valori
+- nel codice ci deve essere una funzione updateHeaders che si occupa di aggiornare l'header della tabella con i nuovi campi deve sempre fare il merge tra quanto gia esiste fare la diff con quelli del nuovo oggetto da inserire o aggiornare e poi aggiornare la prima riga
+- attenzione nella insert e nella update la proprieta sheet è una chiave e non deve essere inserita come colonna o aggiornata quindi non ci sara mail la colonna sheet, attenzione però che data in risposta lo sheet ci deve essere quindi deve essere rimosso proprio in prossimita della chiamata concreta appendRow
+- stai attento a togliere nel merge delle colonne iniziali eventuali colonne vuote quando il foglio e vuoto
+- un altro campo chiave da trattare come lo sheet e il row che riporta il numero di riga per come visibile nello spreadsheet quello ci deve essere sempre
+- i record ritornati nella response data non devono essere flatten ma strutturati e devono contenere anche le colonne che in input non ho mandato
 
 ecco un implementazione di riferimento
 
 /**
  * Handle GET requests
+ * Expected URL format:
+ *   /list?sheet=SheetName&$REMOTE_ADDRESS=...&$USER_AGENT=...&$REQUEST_URI=/list
+ *
+ * Response example:
+ * {
+ *   "sheet": "2025",
+ *   "columns": ["name", "age"],
+ *   "data": [
+ *     { "name": "Frank", "age": 25 },
+ *     { "name": "John", "age": 30 }
+ *   ]
+ * }
+ *
  * @param {Object} e - Event object
  * @return {TextOutput} JSON response
  */
 function doGet(e) {
   try {
-    const action = extractAction(e);
-    const sheetName = extractSheetName(e);
-    const sheet = getSheet(sheetName);
+    var action = extractAction(e);
+    var sheetName = extractSheetNameFromGet(e);
+    var sheet = getSheet(sheetName);
+    if (!sheet) {
+      return outputJSON({ error: "Sheet not found", sheet: sheetName });
+    }
 
-    if (!sheet) return outputJSON({ error: "Sheet not found", sheet: sheetName });
-
-    if (action === "list") return outputJSON({ sheet: sheetName, data: readData(sheet) });
-
+    if (action === "list") {
+      var dataObj = readData(sheet);
+      return outputJSON({
+        sheet: sheet.getName(),
+        columns: dataObj.columns,
+        data: dataObj.data
+      });
+    }
     return outputJSON({ error: "Invalid action", sheet: sheetName });
   } catch (error) {
     return outputJSON({ error: "Error processing request: " + error.message });
@@ -162,27 +198,93 @@ function doGet(e) {
 
 /**
  * Handle POST requests
+ * Expected payload example for insert:
+ * {
+ *   "sheet": "Test CIAO",
+ *   "name": "Frank",
+ *   "age": 25
+ * }
+ *
+ * Expected payload example for update:
+ * {
+ *   "sheet": "2025",
+ *   "filter": { "name": "Frank" },
+ *   "data": { "age": 30 }
+ * }
+ *
+ * Expected payload example for delete:
+ * {
+ *   "sheet": "2025",
+ *   "filter": { "name": "Frank" }
+ * }
+ *
+ * Response examples include:
+ * {
+ *   "sheet": "2025",
+ *   "columns": ["name", "age"],
+ *   "success": true,
+ *   "data": [ { "name": "Frank", "age": 25 } ]
+ * }
+ *
  * @param {Object} e - Event object
  * @return {TextOutput} JSON response
  */
 function doPost(e) {
   try {
-    const action = extractAction(e);
-    const sheetName = extractSheetName(e);
-    let sheet = action === "insert" ? getOrCreateSheet(sheetName) : getSheet(sheetName);
+    var action = extractAction(e);
 
-    if (!sheet) return outputJSON({ error: "Sheet not found", sheet: sheetName });
-
-    let params;
+    // Parse and flatten the JSON payload
+    var params;
     try {
       params = JSON.parse(e.postData.contents);
     } catch (error) {
-      return outputJSON({ error: "Invalid JSON data", sheet: sheetName });
+      return outputJSON({ error: "Invalid JSON data" });
+    }
+    params = flattenObject(params);
+
+    // For POST, sheet name is provided in the JSON payload ("sheet")
+    var sheetName = params.sheet || getFirstSheetName();
+
+    // For insert only, create the sheet if it does not exist.
+    var sheet;
+    if (action === "insert") {
+      sheet = getOrCreateSheet(sheetName);
+    } else {
+      sheet = getSheet(sheetName);
+    }
+    if (!sheet) {
+      return outputJSON({ error: "Sheet not found", sheet: sheetName });
     }
 
-    if (action === "insert") return outputJSON({ sheet: sheetName, result: insertData(sheet, params) });
-    if (action === "update") return outputJSON({ sheet: sheetName, result: updateData(sheet, params) });
-    if (action === "delete") return outputJSON({ sheet: sheetName, result: deleteData(sheet, params) });
+    if (action === "insert") {
+      var result = insertData(sheet, params);
+      return outputJSON({
+        sheet: sheet.getName(),
+        columns: result.columns,
+        success: result.success,
+        data: [result.inserted]
+      });
+    }
+
+    if (action === "update") {
+      var result = updateData(sheet, params);
+      return outputJSON({
+        sheet: sheet.getName(),
+        columns: result.columns,
+        success: result.success,
+        data: [result.updated]
+      });
+    }
+
+    if (action === "delete") {
+      var result = deleteData(sheet, params);
+      return outputJSON({
+        sheet: sheet.getName(),
+        columns: result.columns,
+        success: result.success,
+        data: [result.deleted]
+      });
+    }
 
     return outputJSON({ error: "Invalid action", sheet: sheetName });
   } catch (error) {
@@ -190,82 +292,266 @@ function doPost(e) {
   }
 }
 
+/**
+ * Extract the API action from the $REQUEST_URI parameter.
+ * For example, "/list" becomes "list".
+ * @param {Object} e - Event object
+ * @returns {string} Action string
+ */
 function extractAction(e) {
-  return e.parameter?.["$REQUEST_URI"]?.substring(1) || "";
+  var uri = e.parameter && e.parameter["$REQUEST_URI"];
+  if (uri) {
+    if (typeof uri === "string") {
+      return uri.substring(1); // remove the leading '/'
+    } else if (uri instanceof Array) {
+      return uri[0].substring(1);
+    }
+  }
+  return "";
 }
 
-function extractSheetName(e) {
-  return e.parameter?.sheet?.[0] || getFirstSheetName();
+/**
+ * Extract sheet name for GET requests from query parameters.
+ * @param {Object} e - Event object
+ * @returns {string} Sheet name
+ */
+function extractSheetNameFromGet(e) {
+  if (e.parameter && e.parameter.sheet) {
+    if (typeof e.parameter.sheet === "string") {
+      return e.parameter.sheet;
+    } else if (e.parameter.sheet instanceof Array) {
+      return e.parameter.sheet[0];
+    }
+  }
+  return getFirstSheetName();
 }
 
+/**
+ * Returns the name of the first sheet.
+ * @returns {string} Sheet name
+ */
 function getFirstSheetName() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheets()[0].getName();
 }
 
+/**
+ * Get sheet by name.
+ * @param {string} sheetName
+ * @returns {Sheet} Spreadsheet sheet
+ */
 function getSheet(sheetName) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 }
 
+/**
+ * Get or create a sheet. Only used in the insert API.
+ * @param {string} sheetName
+ * @returns {Sheet} Spreadsheet sheet
+ */
 function getOrCreateSheet(sheetName) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(sheetName);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
-    if (!sheet) throw new Error("Failed to create sheet");
+    if (!sheet) throw new Error("Failed to create sheet: " + sheetName);
   }
   return sheet;
 }
 
+/**
+ * Read all data from the sheet.
+ * Returns an object with header ("columns") and row data ("data").
+ * @param {Sheet} sheet
+ * @returns {Object} Data object { columns: Array, data: Array }
+ */
 function readData(sheet) {
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-  const headers = data.shift();
-  return data.map(row => Object.fromEntries(headers.map((h, i) => [h, row[i]])));
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 1) return { columns: [], data: [] };
+  var headers = data[0];
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var rowObj = {};
+    for (var j = 0; j < headers.length; j++) {
+      rowObj[headers[j]] = data[i][j];
+    }
+    result.push(rowObj);
+  }
+  return { columns: headers, data: result };
 }
 
-function insertData(sheet, newData) {
-  const headers = sheet.getDataRange().getValues()[0] || Object.keys(newData);
-  if (sheet.getLastRow() === 0) sheet.appendRow(headers);
-  sheet.appendRow(headers.map(h => newData[h] ?? ""));
-  return { success: true, inserted: newData };
+/**
+ * Flatten a nested object using dot notation.
+ * For example: { a: { b: "value" } } becomes { "a.b": "value" }.
+ *
+ * @param {Object} obj - The object to flatten.
+ * @param {string} [prefix] - The prefix for nested keys.
+ * @returns {Object} The flattened object.
+ */
+function flattenObject(obj, prefix) {
+  var result = {};
+  prefix = prefix ? prefix + "." : "";
+  for (var key in obj) {
+    if (!obj.hasOwnProperty(key)) continue;
+    if (typeof obj[key] === "object" && obj[key] !== null && !Array.isArray(obj[key])) {
+      var flatObject = flattenObject(obj[key], prefix + key);
+      for (var subKey in flatObject) {
+        if (flatObject.hasOwnProperty(subKey)) {
+          result[subKey] = flatObject[subKey];
+        }
+      }
+    } else {
+      result[prefix + key] = obj[key];
+    }
+  }
+  return result;
 }
 
+/**
+ * Update the header row of the sheet to include new keys from the newData.
+ * Merges existing headers with the keys in newData.
+ *
+ * @param {Sheet} sheet - The target sheet.
+ * @param {Object} newData - The new data object.
+ * @returns {Array} Updated headers array.
+ */
+function updateHeaders(sheet, newData) {
+  var range = sheet.getDataRange();
+  var values = range.getValues();
+  var headers = [];
+  if (values.length > 0) {
+    headers = values[0];
+  }
+  // Create a lookup for existing headers
+  var headerSet = {};
+  for (var i = 0; i < headers.length; i++) {
+    headerSet[headers[i]] = true;
+  }
+  // Add any new keys that are missing
+  var newKeys = Object.keys(newData);
+  var updated = false;
+  for (var i = 0; i < newKeys.length; i++) {
+    if (!headerSet[newKeys[i]]) {
+      headers.push(newKeys[i]);
+      headerSet[newKeys[i]] = true;
+      updated = true;
+    }
+  }
+  // If new headers were added or if the sheet was empty, update the header row.
+  if (updated || values.length === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  return headers;
+}
+
+/**
+ * Insert a record into the sheet.
+ * This function updates headers, appends the new row and verifies the insertion.
+ *
+ * @param {Sheet} sheet - The target sheet.
+ * @param {Object} record - The flattened record to insert.
+ * @returns {Object} Result object with inserted record, success flag, and columns.
+ */
+function insertData(sheet, record) {
+  var headers = updateHeaders(sheet, record);
+  // Create row array based on headers
+  var row = headers.map(function(header) {
+    return record[header] !== undefined ? record[header] : "";
+  });
+  sheet.appendRow(row);
+  // Verify insertion by reading the last row
+  var lastRow = sheet.getLastRow();
+  var insertedRow = sheet.getRange(lastRow, 1, 1, headers.length).getValues()[0];
+  var verified = true;
+  for (var i = 0; i < headers.length; i++) {
+    if (row[i] != insertedRow[i]) {
+      verified = false;
+      break;
+    }
+  }
+  return { success: verified, inserted: record, columns: headers };
+}
+
+/**
+ * Update a record in the sheet.
+ * Expects the parameters to include:
+ *   - filter: an object containing the key-value pair to locate the row.
+ *   - data: an object with new data to update (will be flattened).
+ *
+ * @param {Sheet} sheet - The target sheet.
+ * @param {Object} params - Contains 'filter' and 'data'.
+ * @returns {Object} Result object with updated record, success flag, and columns.
+ */
 function updateData(sheet, params) {
-  if (!params.filter || !params.data) return { error: "Update requires 'filter' and 'data' parameters" };
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const filterKey = Object.keys(params.filter)[0];
-  const filterIndex = headers.indexOf(filterKey);
-  if (filterIndex === -1) return { error: "Filter column not found" };
+  if (!params.filter || !params.data) {
+    return { error: "Update requires 'filter' and 'data' parameters", success: false, columns: [] };
+  }
+  var newData = flattenObject(params.data);
+  var headers = updateHeaders(sheet, newData);
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 1) return { error: "Sheet is empty", success: false, columns: headers };
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][filterIndex] == params.filter[filterKey]) {
-      headers.forEach((h, j) => {
-        if (params.data[h] !== undefined) sheet.getRange(i + 1, j + 1).setValue(params.data[h]);
-      });
-      return { success: true, updated: params.data };
+  // Identify filter column (using the first key in the filter)
+  var filterKey = Object.keys(params.filter)[0];
+  var filterValue = params.filter[filterKey];
+  var filterIndex = headers.indexOf(filterKey);
+  if (filterIndex === -1) return { error: "Filter column not found", success: false, columns: headers };
+
+  // Search for a row that matches the filter and update it
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][filterIndex] == filterValue) {
+      for (var j = 0; j < headers.length; j++) {
+        if (newData[headers[j]] !== undefined) {
+          sheet.getRange(i + 1, j + 1).setValue(newData[headers[j]]);
+        }
+      }
+      return { success: true, updated: newData, columns: headers };
     }
   }
-  return { error: "Row not found" };
+  return { error: "Row not found", success: false, columns: headers };
 }
 
+/**
+ * Delete a record from the sheet.
+ * Expects the parameters to include a filter object.
+ *
+ * @param {Sheet} sheet - The target sheet.
+ * @param {Object} params - Contains 'filter'.
+ * @returns {Object} Result object with deleted record, success flag, and columns.
+ */
 function deleteData(sheet, params) {
-  if (!params.filter) return { error: "Delete requires 'filter' parameter" };
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const filterKey = Object.keys(params.filter)[0];
-  const filterIndex = headers.indexOf(filterKey);
-  if (filterIndex === -1) return { error: "Filter column not found" };
+  if (!params.filter) {
+    return { error: "Delete requires 'filter' parameter", success: false, columns: [] };
+  }
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 1) return { error: "Sheet is empty", success: false, columns: [] };
+  var headers = data[0];
+  var filterKey = Object.keys(params.filter)[0];
+  var filterValue = params.filter[filterKey];
+  var filterIndex = headers.indexOf(filterKey);
+  if (filterIndex === -1) return { error: "Filter column not found", success: false, columns: headers };
 
-  for (let i = data.length - 1; i > 0; i--) {
-    if (data[i][filterIndex] == params.filter[filterKey]) {
+  // Search from bottom to top for the matching row to delete it
+  for (var i = data.length - 1; i > 0; i--) {
+    if (data[i][filterIndex] == filterValue) {
+      // Capture the record before deletion
+      var deletedRecord = {};
+      for (var j = 0; j < headers.length; j++) {
+        deletedRecord[headers[j]] = data[i][j];
+      }
       sheet.deleteRow(i + 1);
-      return { success: true, deleted: params.filter };
+      return { success: true, deleted: deletedRecord, columns: headers };
     }
   }
-  return { error: "Row not found" };
+  return { error: "Row not found", success: false, columns: headers };
 }
 
+/**
+ * Helper function to output JSON response.
+ *
+ * @param {Object} data - The data to output.
+ * @returns {TextOutput} ContentService JSON output.
+ */
 function outputJSON(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }

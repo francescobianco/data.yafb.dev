@@ -16,4 +16,4 @@ test-list:
 test-insert:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		 "$(DATA_URL)/insert" -d '{"sheet":"Test CIAO", "name":"Frank"}'
+		 "$(DATA_URL)/insert" -d '{"sheet":"Test CIAO", "name":"Frank", "age":10, "city":{"name":"Rome","cap":10000}}'
