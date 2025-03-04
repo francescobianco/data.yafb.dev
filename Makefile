@@ -22,15 +22,15 @@ test-insert:
 	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"2025", "name":"Frank", "age":10, "city":{"name":"Rome","cap":10000}}'
 
 test-delete:
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test", "name": "Frank", "age": 10}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test", "row": 2}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test", "name": "Frank", "age": 10}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test", "name": "Frank"}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test", "name": "Frank", "age": 10, "city": {"name": "Rome", "cap": 10000}}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test", "city": {"cap": 10000}}'
-	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test-delete", "name": "Frank", "age": 10}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test-delete", "row": 2}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test-delete", "name": "Frank", "age": 10}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test-delete", "name": "Frank"}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/insert" -d '{"sheet":"test-delete", "name": "Frank", "age": 10, "city": {"name": "Rome", "cap": 10000}}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test-delete", "city": {"cap": 10000}}'
+	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"

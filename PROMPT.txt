@@ -193,7 +193,6 @@ ecco un implementazione di riferimento
 /**
  * Google Apps Script: Spreadsheet API as DB
  *
- * This script implements API endpoints to interact with a Google Spreadsheet as a database.
  * Endpoints:
  *   GET /list
  *   POST /insert
@@ -211,9 +210,11 @@ function doGet(e) {
     if (!sheet) {
       return outputJSON({ error: "Sheet not found", sheet: sheetName });
     }
+
     if (action === "list") {
       var dataObj = readData(sheet);
-      // Build filters from query parameters (keys that do not start with '$' and not "sheet")
+
+      // Build filters from query parameters: all keys that are not "$*" or "sheet"
       var filters = {};
       for (var key in e.parameter) {
         if (e.parameter.hasOwnProperty(key) && key !== "sheet" && key.indexOf("$") !== 0) {
@@ -223,12 +224,14 @@ function doGet(e) {
       if (Object.keys(filters).length > 0) {
         dataObj.data = applyFilters(dataObj.data, filters);
       }
+
       return outputJSON({
         sheet: sheet.getName(),
         columns: dataObj.columns,
         data: dataObj.data
       });
     }
+
     return outputJSON({ error: "Invalid action", sheet: sheetName });
   } catch (error) {
     return outputJSON({ error: "Error processing request: " + error.message });
@@ -244,12 +247,13 @@ function doPost(e) {
     } catch (error) {
       return outputJSON({ error: "Invalid JSON data" });
     }
+
     // Flatten the incoming JSON object so that nested fields become "parent.child"
     params = flattenObject(params);
 
-    // For POST, the sheet name is provided in the JSON payload ("sheet").
+    // For POST, the sheet name is provided in the JSON payload ("sheet")
     var sheetName = params.sheet || getFirstSheetName();
-    // Remove the 'sheet' key so it is not inserted/updated as a column.
+    // Remove the 'sheet' key so it is not inserted/updated as a column
     delete params.sheet;
 
     var sheet;
@@ -271,6 +275,7 @@ function doPost(e) {
         data: [result.inserted]
       });
     }
+
     if (action === "update") {
       var result = updateData(sheet, params);
       if (result.error) {
@@ -282,6 +287,7 @@ function doPost(e) {
         data: [result.updated]
       });
     }
+
     if (action === "delete") {
       var result = deleteData(sheet, params);
       if (result.error) {
@@ -295,6 +301,7 @@ function doPost(e) {
         data: deletedData
       });
     }
+
     return outputJSON({ error: "Invalid action", sheet: sheetName });
   } catch (error) {
     return outputJSON({ error: "Error processing request: " + error.message });
@@ -302,8 +309,8 @@ function doPost(e) {
 }
 
 /**
- * Extract the API action from the $REQUEST_URI parameter.
- * For example, "/list" becomes "list".
+ * Extracts the API action from the $REQUEST_URI parameter.
+ * Example: "/list" becomes "list"
  */
 function extractAction(e) {
   var uri = e.parameter && e.parameter["$REQUEST_URI"];
@@ -318,7 +325,7 @@ function extractAction(e) {
 }
 
 /**
- * Extract sheet name for GET requests from query parameters.
+ * Extracts the sheet name for GET requests from query parameters.
  */
 function extractSheetNameFromGet(e) {
   if (e.parameter && e.parameter.sheet) {
@@ -339,14 +346,14 @@ function getFirstSheetName() {
 }
 
 /**
- * Get a sheet by its name.
+ * Gets a sheet by its name.
  */
 function getSheet(sheetName) {
   return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 }
 
 /**
- * Get or create a sheet.
+ * Gets or creates a sheet.
  * Only used in the insert API. If the sheet does not exist, it is created.
  */
 function getOrCreateSheet(sheetName) {
@@ -360,13 +367,14 @@ function getOrCreateSheet(sheetName) {
 }
 
 /**
- * Read all data from the sheet.
- * Returns an object with header ("columns") and row data ("data").
+ * Reads all data from the sheet.
+ * Returns an object with "columns" (the header row) and "data" (records).
  * Each record includes the "row" property (the actual spreadsheet row number).
  */
 function readData(sheet) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return { columns: [], data: [] };
+
   // Filter out any empty header cells.
   var headers = data[0].filter(function(h) { return h !== ""; });
   var result = [];
@@ -383,8 +391,8 @@ function readData(sheet) {
 }
 
 /**
- * Flatten a nested object using dot notation.
- * For example: { a: { b: "value" } } becomes { "a.b": "value" }.
+ * Flattens a nested object using dot notation.
+ * Example: { a: { b: "value" } } becomes { "a.b": "value" }.
  */
 function flattenObject(obj, prefix) {
   var result = {};
@@ -406,7 +414,7 @@ function flattenObject(obj, prefix) {
 }
 
 /**
- * Unflatten a flat object with dot notation into a nested object.
+ * Unflattens a flat object with dot notation into a nested object.
  */
 function unflattenObject(data) {
   var result = {};
@@ -429,7 +437,7 @@ function unflattenObject(data) {
 }
 
 /**
- * Update the header row of the sheet to include new keys from newData.
+ * Updates the header row of the sheet with new keys from newData.
  * Merges existing headers with keys from newData (ignoring "sheet" and "row"),
  * and removes any empty header cells when the sheet is empty.
  */
@@ -462,8 +470,8 @@ function updateHeaders(sheet, newData) {
 }
 
 /**
- * Insert a record into the sheet.
- * Updates headers, appends the new row, verifies the insertion,
+ * Inserts a record into the sheet.
+ * Updates headers, appends a new row, verifies the insertion,
  * and then returns the full structured record (including the "row" number).
  */
 function insertData(sheet, record) {
@@ -480,19 +488,18 @@ function insertData(sheet, record) {
   }
   flatInserted["row"] = lastRow;
   var structured = unflattenObject(flatInserted);
+
   // Verify the insertion by comparing the values.
-  var verified = true;
   for (var i = 0; i < headers.length; i++) {
     if (row[i] != insertedValues[i]) {
-      verified = false;
-      break;
+      throw new Error("Insertion verification failed on header: " + headers[i]);
     }
   }
   return { inserted: structured, columns: headers };
 }
 
 /**
- * Update a record in the sheet.
+ * Updates a record in the sheet.
  * Expects a "row" key in params to identify which row to update.
  * Returns the updated structured record.
  */
@@ -501,7 +508,7 @@ function updateData(sheet, params) {
     throw new Error("Missing 'row' parameter for update");
   }
   var rowNum = Number(params.row);
-  // Remove 'row' from the update fields.
+  // Remove 'row' from update fields.
   var updateFields = Object.assign({}, params);
   delete updateFields.row;
   var headers = updateHeaders(sheet, updateFields);
@@ -526,15 +533,17 @@ function updateData(sheet, params) {
 }
 
 /**
- * Delete record(s) from the sheet.
+ * Deletes record(s) from the sheet.
  * Supports deletion by explicit "row" or by filtering with other keys.
  * Returns the full structured deleted record(s) (including "row").
  */
 function deleteData(sheet, params) {
   var data = sheet.getDataRange().getValues();
   if (data.length < 1) return { error: "Sheet is empty", columns: [] };
+
   var headers = data[0].filter(function(h) { return h !== ""; });
   var deletedRecords = [];
+
   if (params.row) {
     // Delete by explicit row number.
     var rowNum = Number(params.row);
@@ -580,7 +589,7 @@ function deleteData(sheet, params) {
 }
 
 /**
- * Apply filters to an array of records.
+ * Applies filters to an array of records.
  * Each key in filters is compared against the flattened record.
  */
 function applyFilters(records, filters) {
@@ -588,6 +597,7 @@ function applyFilters(records, filters) {
     var flatRecord = flattenObject(record);
     for (var key in filters) {
       if (filters.hasOwnProperty(key)) {
+        // Compare with loose equality; for more advanced filtering (e.g., >, <) you can extend this logic.
         if (flatRecord[key] != filters[key]) {
           return false;
         }
