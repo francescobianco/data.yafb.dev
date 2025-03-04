@@ -1,0 +1,27 @@
+{
+  "name": "data.alterloop.dev",
+  "version": "1.0.0",
+  "description": "## Proxy",
+  "main": "index.js",
+  "directories": {
+    "test": "test "
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/francescobianco/data.alterloop.dev.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/francescobianco/data.alterloop.dev/issues"
+  },
+  "homepage": "https://github.com/francescobianco/data.alterloop.dev#readme",
+  "devDependencies": {
+    "axios": "^1.8.1",
+    "dotenv": "^16.4.7",
+    "jest": "^29.7.0"
+  }
+}

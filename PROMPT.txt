@@ -154,6 +154,7 @@ ricorda le seguenti feature
 - i record ritornati nella response data non devono essere flatten ma strutturati e devono contenere anche le colonne che in input non ho mandato
 - ricordati che i record in response data devono sempre contenere la chiave sheet e row
 - nella GET tutte le chiave del query string che non iniziano per $ sono considerate colonne da filtrare es. ?city.name=Palermo significa che voglio solo i record dove la colonna city.name e appunto Palermo
+- assicurati che delete funzioni su piu righe e che restituisca i record cancellati considera che le chiavi possono essere quelle libere passate nel postData quindi se voglio cancellare passero qualcosa simile ha {"sheet":"2025","row":2}
 
 ecco un implementazione di riferimento
 
