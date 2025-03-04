@@ -137,11 +137,28 @@ GET /list?sheet=2025&row=2
 ## restituisce tutti i record dal foglio 2025 dove la colonna name e uguale a Frank
 GET /list?sheet=2025&name=Frank
 
+## restituisce tutti i record in cui la colonna city e vuota e la colonna name e uguale a Frank
+GET /list?sheet=2025&city=&name=Frank
+
 ## Cancella il record row 2 dal foglio 2025
 POST /delete
 {
   "sheet": "2025",
   "row": 2
+}
+
+## Cancella i record in cui la colonna age e uguale a 16, 17, 21 dal foglio 2025
+POST /delete
+{
+  "sheet": "2025",
+  "age": [ 16, 17, 21 ]
+}
+
+## Cancella i record in cui la colonna age e uguale a 16, 17, 21 dal foglio 2025
+POST /delete
+{
+  "sheet": "2025",
+  "age": { ">": 16, "<": 21 }
 }
 
 ricorda le seguenti feature
