@@ -11,9 +11,9 @@ push:
 test-list:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		"$(DATA_URL)/list?filter=1"
+		"$(DATA_URL)/list?sheet=2025"
 
 test-insert:
 	@curl -L \
 		-H Secret:$(DATA_SECRET) \
-		 "$(DATA_URL)/insert" -d '{"sheet":"Test","name":"Frank"}'
+		 "$(DATA_URL)/insert" -d '{"sheet":"Test", "name":"Frank"}'

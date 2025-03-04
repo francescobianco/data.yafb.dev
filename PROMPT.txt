@@ -1,0 +1,289 @@
+Genera un file Apps Script che trasformi uno spreadsheet in una DB via API
+
+prendi nota del fatto che input delle doGet e doPost sono di questa forma
+
+{
+  "parameter": {
+    "sheet": "2025",
+    "$REMOTE_ADDRESS": "81.56.115.230",
+    "$REQUEST_URI": "/list",
+    "$USER_AGENT": "curl/7.87.0"
+  },
+  "contentLength": -1,
+  "parameters": {
+    "$REQUEST_URI": [
+      "/list"
+    ],
+    "$REMOTE_ADDRESS": [
+      "81.56.115.230"
+    ],
+    "$USER_AGENT": [
+      "curl/7.87.0"
+    ],
+    "sheet": [
+      "2025"
+    ]
+  },
+  "contextPath": "",
+  "queryString": "$REMOTE_ADDRESS=81.56.115.230&$USER_AGENT=curl%2F7.87.0&$REQUEST_URI=%2Flist&sheet=2025"
+}
+
+dobbiamo implementare le seguenti api
+
+/list
+/insert
+/update
+
+ricorda le seguenti feature
+
+- quando uno sheet non viene trovato in scrittura deve essere creato
+- quando uno sheet non viene esplicitato si fa riferimento al primo sheet disponibile
+- tutti i messaggi devono essere scritti in inglese
+- assicurati che la getOrCreateSheet sia chiamata solo nella api di insert
+- assicurati che la creazione dello sheet funzioni verificando che sia stato creato
+- restituisci nella response il nome dello sheet manipolato in una chiave a parte della response questo deve servire come conferma che lo sheet selezionato sia quello corretto
+
+ecco un implementazione di riferimento
+
+/**
+ * Handle GET requests
+ * @param {Object} e - Event object
+ * @return {TextOutput} JSON response
+ */
+function doGet(e) {
+  try {
+    const action = extractAction(e);
+    const sheetName = extractSheetName(e);
+    const sheet = getOrCreateSheet(sheetName);
+
+    if (!sheet) return outputJSON({ error: "Sheet not found" });
+
+    if (action === "list") return outputJSON(readData(sheet));
+
+    return outputJSON({ error: "Invalid action" });
+  } catch (error) {
+    return outputJSON({ error: "Error processing request: " + error.message });
+  }
+}
+
+/**
+ * Handle POST requests
+ * @param {Object} e - Event object
+ * @return {TextOutput} JSON response
+ */
+function doPost(e) {
+  try {
+    const action = extractAction(e);
+    const sheetName = extractSheetName(e);
+    const sheet = getOrCreateSheet(sheetName);
+
+    if (!sheet) return outputJSON({ error: "Sheet not found" });
+
+    let params;
+    try {
+      params = JSON.parse(e.postData.contents);
+    } catch (error) {
+      return outputJSON({ error: "Invalid JSON data" });
+    }
+
+    if (action === "insert") return outputJSON(insertData(sheet, params));
+    if (action === "update") return outputJSON(updateData(sheet, params));
+
+    return outputJSON({ error: "Invalid action" });
+  } catch (error) {
+    return outputJSON({ error: "Error processing request: " + error.message });
+  }
+}
+
+/**
+ * Extract action from request URI
+ * @param {Object} e - Event object
+ * @return {String} Action name
+ */
+function extractAction(e) {
+  if (!e.parameter || !e.parameter["$REQUEST_URI"]) {
+    return "";
+  }
+
+  const requestUri = Array.isArray(e.parameter["$REQUEST_URI"])
+    ? e.parameter["$REQUEST_URI"][0]
+    : e.parameter["$REQUEST_URI"];
+
+  return requestUri.substring(1);
+}
+
+/**
+ * Extract sheet name from parameters
+ * @param {Object} e - Event object
+ * @return {String} Sheet name
+ */
+function extractSheetName(e) {
+  if (!e.parameter || !e.parameter.sheet) {
+    return getFirstSheetName();
+  }
+
+  return Array.isArray(e.parameter.sheet)
+    ? e.parameter.sheet[0]
+    : e.parameter.sheet;
+}
+
+/**
+ * Get the name of the first sheet in the spreadsheet
+ * @return {String} Sheet name
+ */
+function getFirstSheetName() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheets()[0].getName();
+}
+
+/**
+ * Get a sheet by name or create it if it doesn't exist
+ * @param {String} sheetName - Name of the sheet
+ * @return {Sheet} Sheet object
+ */
+function getOrCreateSheet(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    try {
+      sheet = ss.insertSheet(sheetName);
+    } catch (error) {
+      Logger.log("Error creating sheet: " + error.message);
+      return null;
+    }
+  }
+
+  return sheet;
+}
+
+/**
+ * Read all data from a sheet
+ * @param {Sheet} sheet - Sheet object
+ * @return {Array} Array of row objects
+ */
+function readData(sheet) {
+  const dataRange = sheet.getDataRange();
+  if (dataRange.getHeight() <= 1) {
+    return [];
+  }
+
+  const data = dataRange.getValues();
+  const headers = data.shift();
+
+  return data.map(row => {
+    const rowData = {};
+    headers.forEach((header, index) => {
+      if (header) { // Only process cells with headers
+        rowData[header] = row[index];
+      }
+    });
+    return rowData;
+  });
+}
+
+/**
+ * Insert new data into a sheet
+ * @param {Sheet} sheet - Sheet object
+ * @param {Object} newData - Data to insert
+ * @return {Object} Result object
+ */
+function insertData(sheet, newData) {
+  // Get header row or create one if the sheet is empty
+  let headers = [];
+  const dataRange = sheet.getDataRange();
+
+  if (dataRange.getHeight() < 1) {
+    // Empty sheet, create headers
+    headers = Object.keys(newData);
+    sheet.appendRow(headers);
+  } else {
+    headers = sheet.getRange(1, 1, 1, dataRange.getWidth()).getValues()[0];
+  }
+
+  // Prepare row data based on headers
+  const row = headers.map(header => {
+    return newData[header] !== undefined ? newData[header] : "";
+  });
+
+  sheet.appendRow(row);
+
+  return {
+    success: true,
+    inserted: newData
+  };
+}
+
+/**
+ * Update existing data in a sheet
+ * @param {Sheet} sheet - Sheet object
+ * @param {Object} updateParams - Parameters containing filter and data
+ * @return {Object} Result object
+ */
+function updateData(sheet, updateParams) {
+  if (!updateParams.filter || !updateParams.data) {
+    return { error: "Update requires 'filter' and 'data' parameters" };
+  }
+
+  const dataRange = sheet.getDataRange();
+  if (dataRange.getHeight() <= 1) {
+    return { error: "No data rows found" };
+  }
+
+  const data = dataRange.getValues();
+  const headers = data[0];
+
+  // Find the row to update
+  const filterKey = Object.keys(updateParams.filter)[0];
+  const filterValue = updateParams.filter[filterKey];
+  const filterColumnIndex = headers.indexOf(filterKey);
+
+  if (filterColumnIndex === -1) {
+    return { error: "Filter column not found" };
+  }
+
+  // Find matching row
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][filterColumnIndex] == filterValue) {
+      rowIndex = i;
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return { error: "Row not found" };
+  }
+
+  // Update cells in the row
+  let updated = false;
+  headers.forEach((header, columnIndex) => {
+    if (updateParams.data[header] !== undefined) {
+      sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(updateParams.data[header]);
+      updated = true;
+    }
+  });
+
+  if (!updated) {
+    return { warning: "No fields were updated" };
+  }
+
+  return {
+    success: true,
+    updated: {
+      filter: updateParams.filter,
+      data: updateParams.data
+    }
+  };
+}
+
+/**
+ * Create JSON output
+ * @param {Object} data - Data to convert to JSON
+ * @return {TextOutput} Text output with JSON content type
+ */
+function outputJSON(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
