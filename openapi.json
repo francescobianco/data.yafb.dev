@@ -1,0 +1,185 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Google Spreadsheet API",
+    "description": "API to manage a Google Spreadsheet as a database via API.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://data.alterloop.dev/api",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/list": {
+      "get": {
+        "summary": "Retrieve sheet data",
+        "parameters": [
+          {
+            "name": "sheet",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Sheet name to retrieve data from"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "SecretAuth": [] }]
+      }
+    },
+    "/insert": {
+      "post": {
+        "summary": "Insert a new record",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sheet": { "type": "string", "description": "Sheet name" },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Data to insert"
+                  }
+                },
+                "required": ["sheet", "data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Record inserted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "SecretAuth": [] }]
+      }
+    },
+    "/update": {
+      "post": {
+        "summary": "Update an existing record",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sheet": { "type": "string", "description": "Sheet name" },
+                  "row": { "type": "integer", "description": "Row number to update" },
+                  "data": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Data to update"
+                  }
+                },
+                "required": ["sheet", "row", "data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Record updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "SecretAuth": [] }]
+      }
+    },
+    "/delete": {
+      "post": {
+        "summary": "Delete a record",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sheet": { "type": "string", "description": "Sheet name" },
+                  "row": { "type": "integer", "description": "Row number to delete" }
+                },
+                "required": ["sheet", "row"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Record deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "SecretAuth": [] }]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SecretAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Secret",
+        "description": "Secret key to authenticate requests"
+      }
+    }
+  }
+}

@@ -1,6 +1,11 @@
 -include .env
 export $(shell test -f .env && cut -d= -f1 .env)
 
+update-swagger:
+	@mkdir swagger || true
+	@cp -r node_modules/swagger-ui-dist/* swagger/
+	@cp openapi.json swagger/
+
 push:
 	@git add .
 	@git commit -am "Daily update" || true
