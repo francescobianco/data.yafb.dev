@@ -243,18 +243,16 @@
                 </div>
             </div>
 
-            <div class="code-box">
+            <div class="code-box" style="margin-bottom: 0">
                 <h2>CURL Examples</h2>
                 <div class="code-block">
                     <strong style="color: #ff6b00;">INSERT DATA</strong>
-                    <pre style="margin-top: 10px"><code>curl -X POST https://data.alterloop.dev/api \
--H "Content-Type: application/json" \
--d '{"name": "John", "email": "john@example.com"}'</code></pre>
+                    <pre style="margin-top: 10px"><code>curl -H 'Secret:DEPLOYMENT_ID' https://data.yafb.net/api/insert -d '{"name": "John", "email": "john@example.com"}'</code></pre>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
                 <div class="code-block" style="margin-top: 1rem;">
                     <strong style="color: #ff6b00;">READ DATA</strong>
-                    <pre style="margin-top: 10px"><code>curl https://data.alterloop.dev/api</code></pre>
+                    <pre style="margin-top: 10px"><code>curl -H 'Secret:DEPLOYMENT_ID' https://data.yafb.net/api/list</code></pre>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
