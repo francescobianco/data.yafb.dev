@@ -111,7 +111,6 @@
             border: 1px solid #f0f0f0;
             border-radius: 3px;
             padding: 2rem;
-            display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
         }
@@ -121,6 +120,9 @@
             border-radius: 3px;
             padding: 1rem;
             position: relative;
+        }
+        .code-box {
+            margin-bottom: 20px;
         }
         .copy-btn {
             position: absolute;
@@ -170,6 +172,10 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        .red {
+            color: #ff6b00;
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -207,55 +213,48 @@
                 <div class="step-number">01</div>
                 <h3>Create Google Sheet</h3>
                 <p>Open Google Sheets and create a new spreadsheet. Define clear headers for your data columns.</p>
-                <img src="/api/placeholder/600/400" alt="Create Google Sheet" class="step-image">
+                <img src="./images/step1.png" alt="Create Google Sheet" class="step-image">
             </div>
 
             <div class="step">
                 <div class="step-number">02</div>
                 <h3>Add Apps Script</h3>
-                <p>Navigate to Tools > Script editor and paste the provided API conversion script.</p>
-                <img src="/api/placeholder/600/400" alt="Add Apps Script" class="step-image">
+                <p>Navigate to Extensions > Apps Script. Open editor and paste the provided API file script you found <a href="#file">here</a>.</p>
+                <img src="./images/step2.png" alt="Add Apps Script" class="step-image">
             </div>
 
             <div class="step">
                 <div class="step-number">03</div>
                 <h3>Deploy Web App</h3>
-                <p>Deploy the script as a web app and obtain your unique API endpoint.</p>
-                <img src="/api/placeholder/600/400" alt="Deploy Web App" class="step-image">
+                <p>Deploy the script as a web app and obtain your unique API endpoint. <br><strong>Remember copy your Deployment ID it is your Secret for CURL requests</strong></p>
+                <img src="./images/step3-1.png" alt="Deploy Web App" class="step-image"><br/>
+                <img src="./images/step3-2.png" alt="Deploy Web App" class="step-image"><br/>
+                <img src="./images/step3-3.png" alt="Deploy Web App" class="step-image"><br/>
+                <img src="./images/step3-4.png" alt="Deploy Web App" class="step-image">
             </div>
         </section>
 
-        <section class="code-section">
-            <div>
-                <h2>Simple Script</h2>
-                <div class="code-block">
-                        <pre><code>function doGet() {
-  const sheet = SpreadsheetApp.getActiveSheet();
-  const data = sheet.getDataRange().getValues();
-  return ContentService.createTextOutput(
-    JSON.stringify(data.slice(1).map(row =>
-      Object.fromEntries(
-        data[0].map((header, i) => [header, row[i]])
-      )
-    ))
-  ).setMimeType(ContentService.MimeType.JSON);
-}</code></pre>
+        <section class="code-section" id="file">
+            <div class="code-box">
+                <h2>Apps Script: Code.gs <small class="red">(paste me on google)</small></h2>
+                <div class="code-block" style="max-height:150px;overflow-y:scroll;">
+                    <pre><code id="file-content"></code></pre>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
 
-            <div>
-                <h2>API Examples</h2>
+            <div class="code-box">
+                <h2>CURL Examples</h2>
                 <div class="code-block">
-                    <strong style="color: #ff6b00;">Insert Data:</strong>
-                    <pre><code>curl -X POST https://data.alterloop.dev/api \
+                    <strong style="color: #ff6b00;">INSERT DATA</strong>
+                    <pre style="margin-top: 10px"><code>curl -X POST https://data.alterloop.dev/api \
 -H "Content-Type: application/json" \
 -d '{"name": "John", "email": "john@example.com"}'</code></pre>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
                 <div class="code-block" style="margin-top: 1rem;">
-                    <strong style="color: #ff6b00;">Read Data:</strong>
-                    <pre><code>curl https://data.alterloop.dev/api</code></pre>
+                    <strong style="color: #ff6b00;">READ DATA</strong>
+                    <pre style="margin-top: 10px"><code>curl https://data.alterloop.dev/api</code></pre>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
@@ -284,11 +283,12 @@
     </main>
 
     <footer class="footer">
-        <p>© 2024 data.alterloop.dev - Transform Your Data Effortlessly</p>
+        <p>© 2024 data.yafb.net by Francesco Bianco - Transform Your Data Effortlessly</p>
     </footer>
 </div>
 
 <script>
+
     function copyToClipboard(button) {
         const codeElement = button.previousElementSibling.querySelector('code');
         const textToCopy = codeElement.textContent.trim();
@@ -304,6 +304,12 @@
             }, 2000);
         });
     }
+
+    async function fetchFile() {
+        document.getElementById('file-content').textContent = await fetch('./Code.gs').then(res => res.text());
+    }
+
+    window.onload = fetchFile;
 </script>
 </body>
 </html>
