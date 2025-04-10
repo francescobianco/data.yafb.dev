@@ -1,6 +1,10 @@
 -include .env
 export $(shell test -f .env && cut -d= -f1 .env)
 
+
+serve:
+	npx live-server docs/
+
 update-swagger:
 	@mkdir swagger || true
 	@cp -r node_modules/swagger-ui-dist/* swagger/

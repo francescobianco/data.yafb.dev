@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Google Spreadsheet API",
+    "title": "Data API",
     "description": "API to manage a Google Spreadsheet as a database via API.",
     "version": "1.0.0"
   },

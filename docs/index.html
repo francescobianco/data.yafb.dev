@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>data.alterloop.dev - Transform Google Sheets into APIs</title>
+    <title>data.yafb.net - Transform Google Sheets into APIs</title>
     <style>
         /* Reset and base styles */
         * {
@@ -48,9 +48,10 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            border-radius: 3px;
+            border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-right: 1rem;
+            font-size: 2rem;
         }
 
         /* Buttons */
@@ -158,6 +159,17 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        /* GitHub Section */
+        .swagger-section {
+            text-align: center;
+            background-color: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 3px;
+            padding: 3rem;
+            margin-top: 4rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -171,8 +183,8 @@
 <div class="container">
     <header class="header">
         <div class="logo-container">
-            <div class="logo">AL</div>
-            <h1>data.alterloop.dev</h1>
+            <div class="logo">🗃️</div>
+            <h1>data.yafb.net</h1>
         </div>
 
         <p style="max-width: 600px; margin: 0 auto 2rem;">
@@ -180,7 +192,7 @@
         </p>
 
         <div style="display: flex; justify-content: center; gap: 1rem;">
-            <a href="https://github.com/alterloop/data" class="btn btn-secondary">
+            <a href="https://github.com/francescobianco/data.yafb.net" target="_blank" class="btn btn-secondary">
                 Open Source
             </a>
             <a href="#get-started" class="btn btn-primary">
@@ -190,7 +202,7 @@
     </header>
 
     <main>
-        <section class="steps">
+        <section class="steps" id="get-started">
             <div class="step">
                 <div class="step-number">01</div>
                 <h3>Create Google Sheet</h3>
@@ -249,16 +261,26 @@
             </div>
         </section>
 
-        <section class="github-section">
+        <section class="swagger-section">
+            <h2>Try It Online</h2>
+            <p style="max-width: 600px; margin: 1rem auto;">
+                Explore our API instantly with Swagger UI. No hidden costs, no paid tiers — AlterLoop is completely free and open-source. Just your data and our API in action. Contribute, modify, and use as you wish under the MIT License.
+            </p>
+            <a href="/swagger/" target="_blank" class="btn btn-primary">
+                Open Swagger UI
+            </a>
+        </section>
+
+        <!--section class="github-section">
             <h2>Always Free & Open Source</h2>
             <p style="max-width: 600px; margin: 1rem auto;">
                 No hidden costs, no paid tiers. AlterLoop is completely free and open-source.
                 Contribute, modify, and use as you wish under the MIT License.
             </p>
-            <a href="https://github.com/alterloop/data" class="btn btn-primary">
+            <a href="https://github.com/alterloop/data" target="_blank" class="btn btn-primary">
                 View on GitHub
             </a>
-        </section>
+        </section-->
     </main>
 
     <footer class="footer">
