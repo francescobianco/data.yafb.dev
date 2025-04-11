@@ -17,7 +17,11 @@
         "summary": "Retrieve sheet data",
         "tags": ["Data"],
         "parameters": [
-
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false
+          }
         ],
         "responses": {
           "200": {

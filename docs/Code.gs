@@ -22,7 +22,18 @@ function doGet(e) {
     if (action === "list") {
       var dataObj = readData(sheet);
 
-      // Build filters from query parameters: all keys that are not "$*" or "sheet"
+      // Verifica se è stato fornito un filtro avanzato
+      if (e.parameter && e.parameter.filter) {
+        dataObj.data = applyAdvancedFilter(dataObj.data, e.parameter.filter);
+        return outputJSON({
+          sheet: sheet.getName(),
+          filter: e.parameter.filter,
+          columns: dataObj.columns,
+          data: dataObj.data
+        });
+      }
+
+      // Altrimenti usa il vecchio sistema di filtri
       var filters = {};
       for (var key in e.parameter) {
         if (key && e.parameter.hasOwnProperty(key) && key !== "sheet" && key.indexOf("$") !== 0) {
@@ -46,6 +57,79 @@ function doGet(e) {
     return outputJSON({ error: "Error processing request: " + error.message });
   }
 }
+
+/**
+ * Applica un filtro avanzato basato su espressioni JavaScript codificate nell'URL
+ * Esempio: "age>10&&name!='francesco'"
+ *
+ * @param {Array} records - Array di record da filtrare
+ * @param {string} filterExpression - Espressione di filtro JavaScript
+ * @return {Array} Records filtrati che soddisfano l'espressione
+ */
+function applyAdvancedFilter(records, filterExpression) {
+  // Sanitizza l'espressione per sicurezza
+  // Questo è un approccio base, considera di implementare una soluzione più robusta
+  var sanitizedExpression = sanitizeFilterExpression(filterExpression);
+
+  return records.filter(function(record) {
+    try {
+      // Flatteniamo il record per supportare accesso a proprietà annidate
+      var flatRecord = flattenObject(record);
+
+      // Creiamo una funzione dinamica che valuta l'espressione nel contesto del record
+      var keys = Object.keys(flatRecord);
+      var values = Object.values(flatRecord);
+
+      // Aggiungiamo funzioni di supporto
+      keys.push('isEmpty');
+      values.push(function(val) { return val === null || val === undefined || val === ''; });
+
+      // Creiamo una funzione che valuta l'espressione
+      var evalFunc = new Function(...keys, `try { return ${sanitizedExpression}; } catch(e) { return false; }`);
+
+      // Eseguiamo la funzione con i valori del record
+      return evalFunc(...values);
+    } catch (e) {
+      console.error('Errore nella valutazione dell\'espressione di filtro:', e);
+      return false;
+    }
+  });
+}
+
+/**
+ * Sanitizza l'espressione di filtro per prevenire iniezioni di codice maligno
+ * Questo è un approccio base e dovrebbe essere migliorato per un ambiente di produzione
+ *
+ * @param {string} expression - L'espressione di filtro
+ * @return {string} L'espressione sanitizzata
+ */
+function sanitizeFilterExpression(expression) {
+  // Rimuovi caratteri pericolosi e possibili tentativi di injection
+  expression = expression.replace(/[;\(\)\{\}]|new|eval|Function|setTimeout|setInterval|document|window|constructor/gi, '');
+
+  // Supporta gli operatori comuni (==, !=, >, <, >=, <=, &&, ||, !)
+  // e i valori letterali (numeri e stringhe tra apici)
+  return expression;
+}
+
+/**
+ * Funzione di supporto per verificare se un valore esiste ed ha un valore
+ * @param {*} value - Il valore da verificare
+ * @return {boolean} true se il valore è vuoto, altrimenti false
+ */
+function isEmpty(value) {
+  return value === null || value === undefined || value === '';
+}
+
+/**
+ * Controlla se una stringa rappresenta un'espressione di filtro complessa
+ * @param {string} str - La stringa da verificare
+ * @return {boolean} true se la stringa contiene operatori di confronto
+ */
+function isComplexFilter(str) {
+  return /[><=!&|]/.test(str);
+}
+
 
 function doPost(e) {
   try {
