@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "https://data.alterloop.dev/api",
-      "description": "Production Server"
+      "url": "https://data.yafb.net/api",
+      "description": "Official API server"
     }
   ],
   "paths": {
@@ -16,13 +16,7 @@
       "get": {
         "summary": "Retrieve sheet data",
         "parameters": [
-          {
-            "name": "sheet",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "Sheet name to retrieve data from"
-          }
+
         ],
         "responses": {
           "200": {
@@ -45,7 +39,7 @@
             }
           }
         },
-        "security": [{ "SecretAuth": [] }]
+        "security": [{ "DEPLOYMENT_ID": [] }]
       }
     },
     "/insert": {
@@ -91,7 +85,7 @@
             }
           }
         },
-        "security": [{ "SecretAuth": [] }]
+        "security": [{ "DEPLOYMENT_ID": [] }]
       }
     },
     "/update": {
@@ -132,7 +126,7 @@
             }
           }
         },
-        "security": [{ "SecretAuth": [] }]
+        "security": [{ "DEPLOYMENT_ID": [] }]
       }
     },
     "/delete": {
@@ -168,17 +162,17 @@
             }
           }
         },
-        "security": [{ "SecretAuth": [] }]
+        "security": [{ "DEPLOYMENT_ID": [] }]
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "SecretAuth": {
+      "DEPLOYMENT_ID": {
         "type": "apiKey",
         "in": "header",
         "name": "Secret",
-        "description": "Secret key to authenticate requests"
+        "description": "Secret Deployment ID to authenticate requests",
       }
     }
   }
