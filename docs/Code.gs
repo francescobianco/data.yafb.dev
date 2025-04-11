@@ -2,12 +2,20 @@
  * Google Apps Script: Spreadsheet API as DB
  *
  * Endpoints:
- *   GET /list
- *   POST /insert
- *   POST /update
- *   POST /delete
+ *   GET /list              - Retrieves data with optional filtering
+ *   POST /insert           - Inserts a new record
+ *   POST /update           - Updates a record or multiple records with match filter
+ *   POST /delete           - Deletes a record or multiple records with match filter
  *
  * All responses are in JSON format (terminated with a newline).
+ *
+ * Advanced filtering:
+ * - Simple params: /list?name=John&age=30
+ * - Advanced filter: /list?filter=age>20 AND name CONTAINS "John"
+ *
+ * Match filtering for update and delete:
+ * - Update multiple records: {"match": "age>30", "status": "active"}
+ * - Delete multiple records: {"match": "status='inactive'"}
  */
 
 function doGet(e) {
@@ -22,18 +30,20 @@ function doGet(e) {
     if (action === "list") {
       var dataObj = readData(sheet);
 
-      // Verifica se è stato fornito un filtro avanzato
+      // Check if an advanced filter was provided
       if (e.parameter && e.parameter.filter) {
-        dataObj.data = applyAdvancedFilter(dataObj.data, e.parameter.filter);
+        var jsFilter = translateFilterToJs(e.parameter.filter);
+        dataObj.data = applyAdvancedFilter(dataObj.data, jsFilter);
         return outputJSON({
           sheet: sheet.getName(),
           filter: e.parameter.filter,
+          translated_filter: jsFilter,
           columns: dataObj.columns,
           data: dataObj.data
         });
       }
 
-      // Altrimenti usa il vecchio sistema di filtri
+      // Otherwise use the legacy filtering system
       var filters = {};
       for (var key in e.parameter) {
         if (key && e.parameter.hasOwnProperty(key) && key !== "sheet" && key.indexOf("$") !== 0) {
@@ -57,79 +67,6 @@ function doGet(e) {
     return outputJSON({ error: "Error processing request: " + error.message });
   }
 }
-
-/**
- * Applica un filtro avanzato basato su espressioni JavaScript codificate nell'URL
- * Esempio: "age>10&&name!='francesco'"
- *
- * @param {Array} records - Array di record da filtrare
- * @param {string} filterExpression - Espressione di filtro JavaScript
- * @return {Array} Records filtrati che soddisfano l'espressione
- */
-function applyAdvancedFilter(records, filterExpression) {
-  // Sanitizza l'espressione per sicurezza
-  // Questo è un approccio base, considera di implementare una soluzione più robusta
-  var sanitizedExpression = sanitizeFilterExpression(filterExpression);
-
-  return records.filter(function(record) {
-    try {
-      // Flatteniamo il record per supportare accesso a proprietà annidate
-      var flatRecord = flattenObject(record);
-
-      // Creiamo una funzione dinamica che valuta l'espressione nel contesto del record
-      var keys = Object.keys(flatRecord);
-      var values = Object.values(flatRecord);
-
-      // Aggiungiamo funzioni di supporto
-      keys.push('isEmpty');
-      values.push(function(val) { return val === null || val === undefined || val === ''; });
-
-      // Creiamo una funzione che valuta l'espressione
-      var evalFunc = new Function(...keys, `try { return ${sanitizedExpression}; } catch(e) { return false; }`);
-
-      // Eseguiamo la funzione con i valori del record
-      return evalFunc(...values);
-    } catch (e) {
-      console.error('Errore nella valutazione dell\'espressione di filtro:', e);
-      return false;
-    }
-  });
-}
-
-/**
- * Sanitizza l'espressione di filtro per prevenire iniezioni di codice maligno
- * Questo è un approccio base e dovrebbe essere migliorato per un ambiente di produzione
- *
- * @param {string} expression - L'espressione di filtro
- * @return {string} L'espressione sanitizzata
- */
-function sanitizeFilterExpression(expression) {
-  // Rimuovi caratteri pericolosi e possibili tentativi di injection
-  expression = expression.replace(/[;\(\)\{\}]|new|eval|Function|setTimeout|setInterval|document|window|constructor/gi, '');
-
-  // Supporta gli operatori comuni (==, !=, >, <, >=, <=, &&, ||, !)
-  // e i valori letterali (numeri e stringhe tra apici)
-  return expression;
-}
-
-/**
- * Funzione di supporto per verificare se un valore esiste ed ha un valore
- * @param {*} value - Il valore da verificare
- * @return {boolean} true se il valore è vuoto, altrimenti false
- */
-function isEmpty(value) {
-  return value === null || value === undefined || value === '';
-}
-
-/**
- * Controlla se una stringa rappresenta un'espressione di filtro complessa
- * @param {string} str - La stringa da verificare
- * @return {boolean} true se la stringa contiene operatori di confronto
- */
-function isComplexFilter(str) {
-  return /[><=!&|]/.test(str);
-}
-
 
 function doPost(e) {
   try {
@@ -170,29 +107,61 @@ function doPost(e) {
     }
 
     if (action === "update") {
-      var result = updateData(sheet, params);
-      if (result.error) {
-        return outputJSON({ error: result.error, sheet: sheet.getName(), columns: result.columns });
+      // Check if a match filter was provided for updating multiple records
+      if (params.match) {
+        var matchFilter = params.match;
+        delete params.match; // Remove match from fields to update
+
+        var result = updateMultipleData(sheet, params, matchFilter);
+        return outputJSON({
+          sheet: sheet.getName(),
+          match: matchFilter,
+          columns: result.columns,
+          updatedCount: result.updatedCount,
+          data: result.updated
+        });
+      } else {
+        // Fallback to original row-based update logic
+        var result = updateData(sheet, params);
+        if (result.error) {
+          return outputJSON({ error: result.error, sheet: sheet.getName(), columns: result.columns });
+        }
+        return outputJSON({
+          sheet: sheet.getName(),
+          columns: result.columns,
+          data: [result.updated]
+        });
       }
-      return outputJSON({
-        sheet: sheet.getName(),
-        columns: result.columns,
-        data: [result.updated]
-      });
     }
 
     if (action === "delete") {
-      var result = deleteData(sheet, params);
-      if (result.error) {
-        return outputJSON({ error: result.error, sheet: sheet.getName(), columns: result.columns });
+      // Check if a match filter was provided for deleting multiple records
+      if (params.match) {
+        var matchFilter = params.match;
+        delete params.match;
+
+        var result = deleteMultipleData(sheet, matchFilter);
+        return outputJSON({
+          sheet: sheet.getName(),
+          match: matchFilter,
+          columns: result.columns,
+          deletedCount: result.deletedCount,
+          data: result.deleted
+        });
+      } else {
+        // Fallback to original deletion logic
+        var result = deleteData(sheet, params);
+        if (result.error) {
+          return outputJSON({ error: result.error, sheet: sheet.getName(), columns: result.columns });
+        }
+        // Ensure the deleted data is always returned as an array.
+        var deletedData = Array.isArray(result.deleted) ? result.deleted : [result.deleted];
+        return outputJSON({
+          sheet: sheet.getName(),
+          columns: result.columns,
+          data: deletedData
+        });
       }
-      // Ensure the deleted data is always returned as an array.
-      var deletedData = Array.isArray(result.deleted) ? result.deleted : [result.deleted];
-      return outputJSON({
-        sheet: sheet.getName(),
-        columns: result.columns,
-        data: deletedData
-      });
     }
 
     return outputJSON({ error: "Invalid action", sheet: sheetName });
@@ -498,6 +467,282 @@ function applyFilters(records, filters) {
     }
     return true;
   });
+}
+
+/**
+ * Updates multiple records that match a filter expression
+ *
+ * @param {Sheet} sheet - The sheet to update
+ * @param {Object} updateData - The data to update
+ * @param {string} matchFilter - The filter expression to select records
+ * @return {Object} Result with updated records
+ */
+function updateMultipleData(sheet, updateData, matchFilter) {
+  // Read all data from the sheet
+  var dataObj = readData(sheet);
+
+  // Translate the filter to JavaScript if it's in natural language format
+  var jsFilter = translateFilterToJs(matchFilter);
+
+  // Apply the filter to find matching records
+  var matchingRecords = applyAdvancedFilter(dataObj.data, jsFilter);
+
+  if (matchingRecords.length === 0) {
+    return {
+      columns: dataObj.columns,
+      updatedCount: 0,
+      updated: []
+    };
+  }
+
+  var updatedRecords = [];
+
+  // Update each matching record
+  for (var i = 0; i < matchingRecords.length; i++) {
+    var record = matchingRecords[i];
+    var rowNum = record.row;
+
+    // Create an update object with the row
+    var updateObj = Object.assign({}, updateData, { row: rowNum });
+
+    // Call the existing update function
+    var result = updateData(sheet, updateObj);
+    if (!result.error) {
+      updatedRecords.push(result.updated);
+    }
+  }
+
+  return {
+    columns: dataObj.columns,
+    updatedCount: updatedRecords.length,
+    updated: updatedRecords
+  };
+}
+
+/**
+ * Deletes multiple records that match a filter expression
+ *
+ * @param {Sheet} sheet - The sheet to delete from
+ * @param {string} matchFilter - The filter expression to select records
+ * @return {Object} Result with deleted records
+ */
+function deleteMultipleData(sheet, matchFilter) {
+  // Read all data from the sheet
+  var dataObj = readData(sheet);
+
+  // Translate the filter to JavaScript if it's in natural language format
+  var jsFilter = translateFilterToJs(matchFilter);
+
+  // Apply the filter to find matching records
+  var matchingRecords = applyAdvancedFilter(dataObj.data, jsFilter);
+
+  if (matchingRecords.length === 0) {
+    return {
+      columns: dataObj.columns,
+      deletedCount: 0,
+      deleted: []
+    };
+  }
+
+  // Sort records by row, in descending order
+  // This is important to delete rows from bottom to top
+  // and not interfere with row indices
+  matchingRecords.sort(function(a, b) {
+    return b.row - a.row;
+  });
+
+  var deletedRecords = [];
+
+  // Delete each matching record
+  for (var i = 0; i < matchingRecords.length; i++) {
+    var record = matchingRecords[i];
+    var rowNum = record.row;
+
+    // Get row data before deleting it
+    var rowData = sheet.getRange(rowNum, 1, 1, dataObj.columns.length).getValues()[0];
+    var recordData = {};
+    for (var j = 0; j < dataObj.columns.length; j++) {
+      recordData[dataObj.columns[j]] = rowData[j];
+    }
+    recordData.row = rowNum;
+    deletedRecords.push(unflattenObject(recordData));
+
+    // Delete the row
+    sheet.deleteRow(rowNum);
+  }
+
+  return {
+    columns: dataObj.columns,
+    deletedCount: deletedRecords.length,
+    deleted: deletedRecords
+  };
+}
+
+/**
+ * Translates a filter expression written in natural language to JavaScript
+ *
+ * @param {string} filter - The natural language filter expression
+ * @return {string} The JavaScript filter expression
+ */
+function translateFilterToJs(filter) {
+  if (!filter) return '';
+
+  // If the filter already looks like JavaScript, return it directly
+  if (typeof filter === 'string' && (
+      filter.indexOf('&&') >= 0 ||
+      filter.indexOf('||') >= 0 ||
+      filter.indexOf('===') >= 0 ||
+      filter.match(/[^=!<>]=[^=]/)
+  )) {
+    return filter;
+  }
+
+  // Define translations (from natural operator to JavaScript operator)
+  const translations = [
+    // Logical operators
+    { from: / AND /gi,   to: ' && ' },
+    { from: / OR /gi,    to: ' || ' },
+    { from: / NOT /gi,   to: ' !' },
+
+    // Comparison operators with words
+    { from: / IS NULL/gi,     to: ' === null' },
+    { from: / IS NOT NULL/gi, to: ' !== null' },
+    { from: / IS EMPTY/gi,    to: ' === ""' },
+    { from: / IS NOT EMPTY/gi, to: ' !== ""' },
+    { from: / IS /gi,         to: ' === ' },
+    { from: / IS NOT /gi,     to: ' !== ' },
+    { from: / EQUALS /gi,     to: ' === ' },
+    { from: / NOT EQUALS /gi, to: ' !== ' },
+    { from: / CONTAINS /gi,   to: '.includes(' },
+    { from: / NOT CONTAINS /gi, to: '!.includes(' },
+    { from: / STARTS WITH /gi, to: '.startsWith(' },
+    { from: / ENDS WITH /gi,   to: '.endsWith(' },
+
+    // Operator aliases
+    { from: /\band\b/gi,  to: ' && ' },
+    { from: /\bor\b/gi,   to: ' || ' },
+    { from: /\bnot\b/gi,  to: ' !' },
+    { from: /\bis\b/gi,   to: ' === ' },
+
+    // Support for comparison operators without spaces
+    { from: /([a-zA-Z0-9_."\'])(>=|<=|!=|==|>|<)([a-zA-Z0-9_."\'])/g,
+      to: function(match, p1, op, p3) {
+        return p1 + ' ' + op + ' ' + p3;
+      }
+    }
+  ];
+
+  // Apply all translations
+  let result = ' ' + filter + ' '; // Add spaces to make regex easier
+
+  for (const t of translations) {
+    if (typeof t.to === 'function') {
+      result = result.replace(t.from, t.to);
+    } else {
+      result = result.replace(t.from, t.to);
+    }
+  }
+
+  // Special handling for CONTAINS, STARTS WITH, ENDS WITH
+  // which require a closing parenthesis
+  result = result.replace(/\.includes\(([^)]*?)(?!\))/g, '.includes($1)');
+  result = result.replace(/\.startsWith\(([^)]*?)(?!\))/g, '.startsWith($1)');
+  result = result.replace(/\.endsWith\(([^)]*?)(?!\))/g, '.endsWith($1)');
+
+  // Handle unquoted string values
+  // Look for words that aren't already in quotes and aren't numbers or operators
+  result = result.replace(/([=!<>]=?|startsWith\(|endsWith\(|includes\()[ ]*([a-zA-Z][a-zA-Z0-9_]*)(?!["\'])/g,
+    function(match, op, word) {
+      // Check if the word is a boolean, null or undefined
+      if (word === 'true' || word === 'false' || word === 'null' || word === 'undefined') {
+        return op + ' ' + word;
+      }
+      // Otherwise, wrap it in quotes
+      return op + ' "' + word + '"';
+    }
+  );
+
+  return result.trim();
+}
+
+/**
+ * Applies an advanced filter based on JavaScript expressions
+ *
+ * @param {Array} records - Array of records to filter
+ * @param {string} filterExpression - JavaScript filter expression
+ * @return {Array} Filtered records that satisfy the expression
+ */
+function applyAdvancedFilter(records, filterExpression) {
+  // Sanitize the expression for security
+  var sanitizedExpression = sanitizeFilterExpression(filterExpression);
+
+  return records.filter(function(record) {
+    try {
+      // Flatten the record to support access to nested properties
+      var flatRecord = flattenObject(record);
+
+      // Create a dynamic function that evaluates the expression in the context of the record
+      var keys = Object.keys(flatRecord);
+      var values = Object.values(flatRecord);
+
+      // Add support functions
+      keys.push('isEmpty');
+      values.push(function(val) { return val === null || val === undefined || val === ''; });
+
+      // For CONTAINS, STARTS WITH, ENDS WITH support
+      // Convert all values to strings (if possible) for these methods
+      for (let i = 0; i < values.length; i++) {
+        if (values[i] !== null && values[i] !== undefined) {
+          // Add String methods to all non-null values
+          if (typeof values[i] !== 'string') {
+            const originalValue = values[i];
+            // Create a proxy that allows access to String methods
+            values[i] = new Proxy(originalValue, {
+              get: function(target, prop) {
+                if (prop === 'includes' || prop === 'startsWith' || prop === 'endsWith') {
+                  return String.prototype[prop].bind(String(target));
+                }
+                return target[prop];
+              }
+            });
+          }
+        }
+      }
+
+      // Create a function that evaluates the expression
+      var evalFunc = new Function(...keys, `try { return ${sanitizedExpression}; } catch(e) { console.error(e); return false; }`);
+
+      // Execute the function with the record values
+      return evalFunc(...values);
+    } catch (e) {
+      console.error('Error evaluating filter expression:', e);
+      return false;
+    }
+  });
+}
+
+/**
+ * Sanitizes a filter expression to prevent code injection
+ * This is a basic approach and should be improved for production
+ *
+ * @param {string} expression - The filter expression
+ * @return {string} The sanitized expression
+ */
+function sanitizeFilterExpression(expression) {
+  // Remove dangerous characters and potential injection attempts
+  expression = expression.replace(/[;\{\}]|new\s+|eval|Function|setTimeout|setInterval|document|window|global|constructor/gi, '');
+
+  // Allow only safe operators and method calls
+  return expression;
+}
+
+/**
+ * Helper function to check if a value is empty
+ * @param {*} value - The value to check
+ * @return {boolean} true if the value is empty, otherwise false
+ */
+function isEmpty(value) {
+  return value === null || value === undefined || value === '';
 }
 
 /**

@@ -98,6 +98,13 @@
       "post": {
         "summary": "Update an existing record",
         "tags": ["Data"],
+        "parameters": [
+          {
+            "name": "match",
+            "in": "query",
+            "required": false
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -140,6 +147,13 @@
       "post": {
         "summary": "Delete a record",
         "tags": ["Data"],
+        "parameters": [
+          {
+            "name": "match",
+            "in": "query",
+            "required": false
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
