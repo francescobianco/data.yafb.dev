@@ -25,7 +25,7 @@ function doGet(e) {
       // Build filters from query parameters: all keys that are not "$*" or "sheet"
       var filters = {};
       for (var key in e.parameter) {
-        if (e.parameter.hasOwnProperty(key) && key !== "sheet" && key.indexOf("$") !== 0) {
+        if (key && e.parameter.hasOwnProperty(key) && key !== "sheet" && key.indexOf("$") !== 0) {
           filters[key] = e.parameter[key];
         }
       }
@@ -35,6 +35,7 @@ function doGet(e) {
 
       return outputJSON({
         sheet: sheet.getName(),
+        filters: filters,
         columns: dataObj.columns,
         data: dataObj.data
       });
