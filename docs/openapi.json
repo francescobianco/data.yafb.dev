@@ -15,6 +15,7 @@
     "/list": {
       "get": {
         "summary": "Retrieve sheet data",
+        "tags": ["Data"],
         "parameters": [
 
         ],
@@ -45,6 +46,7 @@
     "/insert": {
       "post": {
         "summary": "Insert a new record",
+        "tags": ["Data"],
         "requestBody": {
           "required": true,
           "content": {
@@ -91,6 +93,7 @@
     "/update": {
       "post": {
         "summary": "Update an existing record",
+        "tags": ["Data"],
         "requestBody": {
           "required": true,
           "content": {
@@ -132,6 +135,7 @@
     "/delete": {
       "post": {
         "summary": "Delete a record",
+        "tags": ["Data"],
         "requestBody": {
           "required": true,
           "content": {
@@ -171,8 +175,8 @@
       "DEPLOYMENT_ID": {
         "type": "apiKey",
         "in": "header",
-        "name": "Secret",
-        "description": "Secret Deployment ID to authenticate requests",
+        "name": "secret",
+        "description": "Secret Deployment ID to authenticate requests"
       }
     }
   }

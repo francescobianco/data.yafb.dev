@@ -7,7 +7,7 @@ const DATA_SECRET = process.env.DATA_SECRET;
 
 const apiClient = axios.create({
     baseURL: DATA_URL,
-    timeout: 60000, // Imposta timeout a 60 secondi
+    timeout: 60000,
     headers: { Secret: DATA_SECRET }
 });
 
@@ -32,19 +32,16 @@ describe('API Delete Test', () => {
     });
 
     it('should delete the inserted record', async () => {
-        // Verifica che il record sia stato inserito
         const listResponse = await apiClient.get(`/list?sheet=${sheetName}`);
         expect(listResponse.status).toBe(200);
         expect(listResponse.data.data.some(record => record.row === insertedRow)).toBe(true);
 
-        // Cancella il record
         const deleteResponse = await apiClient.post('/delete', {
             sheet: sheetName,
             row: insertedRow
         });
         expect(deleteResponse.status).toBe(200);
 
-        // Verifica che il record sia stato cancellato
         const listAfterDelete = await apiClient.get(`/list?sheet=${sheetName}`);
         expect(listAfterDelete.status).toBe(200);
         expect(listAfterDelete.data.data.some(record => record.row === insertedRow)).toBe(false);
