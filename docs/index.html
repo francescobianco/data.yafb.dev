@@ -129,7 +129,7 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            background-color: rgba(255,107,0,0.1);
+            background-color: rgba(255,107,0);
             color: #ff6b00;
             border: none;
             padding: 0.5rem;
@@ -138,13 +138,16 @@
             transition: all 0.3s ease;
         }
         .copy-btn:hover {
-            background-color: rgba(255,107,0,0.2);
+            background-color: rgba(255,107,0);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
             .code-section {
                 grid-template-columns: 1fr;
+            }
+            .code-block {
+                overflow-y: scroll;
             }
             h1 { font-size: 2rem; }
             .logo-container { flex-direction: column; }
@@ -238,8 +241,10 @@
         <section class="code-section" id="file">
             <div class="code-box">
                 <h2>Apps Script: Code.gs <small class="red">(paste me on google)</small></h2>
-                <div class="code-block" style="max-height:150px;overflow-y:scroll;">
-                    <pre><code id="file-content"></code></pre>
+                <div style="position: relative">
+                    <div class="code-block" style="max-height:150px;overflow-y:scroll;">
+                        <pre><code id="file-content"></code></pre>
+                    </div>
                     <button onclick="copyToClipboard(this)" class="copy-btn">Copy</button>
                 </div>
             </div>
