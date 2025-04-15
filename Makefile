@@ -10,6 +10,9 @@ update-swagger:
 	@cp -r node_modules/swagger-ui-dist/* swagger/
 	@cp openapi.json swagger/
 
+release: push
+	npm publish --access public
+
 push:
 	@git add .
 	@git commit -am "Daily update" || true
@@ -38,3 +41,6 @@ test-delete:
 	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
 	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/delete" -d '{"sheet":"test-delete", "city": {"cap": 10000}}'
 	@curl -L -H Secret:$(DATA_SECRET) "$(DATA_URL)/list?sheet=test-delete"
+
+test-lib:
+	@jest $(file)

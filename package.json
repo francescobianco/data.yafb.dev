@@ -1,7 +1,7 @@
 {
-  "name": "data.alterloop.dev",
-  "version": "1.0.0",
-  "description": "## Proxy",
+  "name": "data.yafb.net",
+  "version": "0.1.0",
+  "description": "Transform Your Google Sheets into Powerful APIs Instantly",
   "main": "index.js",
   "directories": {
     "test": "test "
@@ -11,18 +11,27 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/francescobianco/data.alterloop.dev.git"
+    "url": "git+https://github.com/francescobianco/data.yafb.net.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/francescobianco/data.alterloop.dev/issues"
+    "url": "https://github.com/francescobianco/data.yafb.net/issues"
   },
-  "homepage": "https://github.com/francescobianco/data.alterloop.dev#readme",
+  "homepage": "https://github.com/francescobianco/data.yafb.net#readme",
   "devDependencies": {
-    "axios": "^1.8.1",
+    "@jest/globals": "^29.7.0",
+    "axios": "1.8.2",
     "dotenv": "^16.4.7",
     "jest": "^29.7.0",
     "swagger-ui-dist": "^5.20.0"
+  },
+  "jest": {
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setup.js"
+    ]
+  },
+  "volta": {
+    "node": "22.14.0"
   }
 }
