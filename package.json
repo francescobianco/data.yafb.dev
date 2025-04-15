@@ -22,7 +22,7 @@
   "bugs": {
     "url": "https://github.com/francescobianco/data.yafb.net/issues"
   },
-  "homepage": "https://github.com/francescobianco/data.yafb.net#readme",
+  "homepage": "https://data.yafb.net",
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "axios": "1.8.2",
