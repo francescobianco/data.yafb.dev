@@ -1,8 +1,12 @@
 {
   "name": "data.yafb.net",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transform Your Google Sheets into Powerful APIs Instantly",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
   "directories": {
     "test": "test "
   },
